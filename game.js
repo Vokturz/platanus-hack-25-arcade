@@ -54,10 +54,23 @@ const game = new Phaser.Game(config);
 
 // Create cover image as base64 PNG
 const coverImageData = "";
+// *** NEW *** Sprite types available for selection
+const SPRITE_TYPES = {
+  AMONGUS: "amongus",
+  PEPE: "pepe",
+  DOGE: "doge",
+};
+
+// Monster types (not selectable by players)
+const MONSTER_TYPES = {
+  SKULL: "skull",
+};
+
 let scene,
   graphics,
   currentState = "menu";
 let numPlayers = 1;
+let selectedSprites = [SPRITE_TYPES.AMONGUS, SPRITE_TYPES.AMONGUS]; // Default sprites for players
 
 // Among Us sprite data (10x10 pixel art as arrays)
 const AMONGUS_SPRITES = {
@@ -99,6 +112,119 @@ const AMONGUS_SPRITES = {
   ],
 };
 
+const PEPE_SPRITES = {
+  idle: [
+    [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 1, 2, 2, 2, 2, 2, 1, 0, 0],
+    [1, 2, 3, 3, 3, 3, 3, 2, 1, 0],
+    [1, 2, 3, 4, 4, 4, 3, 3, 2, 1],
+    [1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
+    [1, 2, 2, 5, 5, 5, 5, 2, 2, 1],
+    [1, 2, 2, 6, 6, 6, 6, 2, 2, 1],
+    [0, 1, 2, 6, 6, 6, 6, 2, 1, 0],
+    [0, 0, 1, 2, 2, 2, 2, 1, 0, 0],
+    [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+  ],
+  walk1: [
+    [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 1, 2, 2, 2, 2, 2, 1, 0, 0],
+    [1, 2, 3, 3, 3, 3, 3, 2, 1, 0],
+    [1, 2, 3, 4, 4, 4, 3, 3, 2, 1],
+    [1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
+    [1, 2, 2, 5, 5, 5, 5, 2, 2, 1],
+    [1, 2, 2, 6, 6, 6, 6, 2, 2, 1],
+    [0, 1, 2, 6, 6, 6, 6, 2, 1, 0],
+    [0, 1, 1, 0, 0, 0, 0, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  walk2: [
+    [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 1, 2, 2, 2, 2, 2, 1, 0, 0],
+    [1, 2, 3, 3, 3, 3, 3, 2, 1, 0],
+    [1, 2, 3, 4, 4, 4, 3, 3, 2, 1],
+    [1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
+    [1, 2, 2, 5, 5, 5, 5, 2, 2, 1],
+    [1, 2, 2, 6, 6, 6, 6, 2, 2, 1],
+    [0, 1, 2, 6, 6, 6, 6, 2, 1, 0],
+    [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+};
+
+const DOGE_SPRITES = {
+  idle: [
+    [0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
+    [1, 2, 2, 1, 0, 1, 2, 2, 1, 0],
+    [1, 2, 3, 3, 2, 3, 3, 2, 1, 0],
+    [1, 2, 3, 4, 3, 4, 3, 2, 1, 0],
+    [1, 2, 2, 4, 4, 4, 2, 2, 1, 0],
+    [1, 2, 2, 5, 5, 5, 2, 2, 1, 0],
+    [1, 2, 2, 5, 6, 6, 5, 2, 2, 1],
+    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
+    [0, 0, 1, 2, 2, 2, 2, 1, 0, 0],
+    [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+  ],
+  walk1: [
+    [0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
+    [1, 2, 2, 1, 0, 1, 2, 2, 1, 0],
+    [1, 2, 3, 3, 2, 3, 3, 2, 1, 0],
+    [1, 2, 3, 4, 3, 4, 3, 2, 1, 0],
+    [1, 2, 2, 4, 4, 4, 2, 2, 1, 0],
+    [1, 2, 2, 5, 5, 5, 2, 2, 1, 1],
+    [1, 2, 2, 5, 6, 6, 5, 2, 2, 1],
+    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
+    [0, 1, 1, 0, 0, 0, 0, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  walk2: [
+    [0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
+    [1, 2, 2, 1, 0, 1, 2, 2, 1, 0],
+    [1, 2, 3, 3, 2, 3, 3, 2, 1, 0],
+    [1, 2, 3, 4, 3, 4, 3, 2, 1, 0],
+    [1, 2, 2, 4, 4, 4, 2, 2, 1, 0],
+  ],
+};
+
+// *** NEW *** Skull sprite (10x10 pixel art) - smaller within grid
+const SKULL_SPRITES = {
+  idle: [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+    [0, 1, 2, 3, 4, 3, 4, 2, 1, 0],
+    [0, 1, 2, 3, 3, 3, 3, 2, 1, 0],
+    [0, 1, 2, 2, 2, 2, 2, 2, 1, 0],
+    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
+    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
+    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
+    [0, 0, 1, 6, 6, 6, 6, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  walk1: [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+    [0, 1, 2, 3, 4, 3, 4, 2, 1, 0],
+    [0, 1, 2, 3, 3, 3, 3, 2, 1, 0],
+    [0, 1, 2, 2, 2, 2, 2, 2, 1, 0],
+    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
+    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
+    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
+    [0, 1, 1, 6, 6, 6, 6, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  walk2: [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+    [0, 1, 2, 3, 4, 3, 4, 2, 1, 0],
+    [0, 1, 2, 3, 3, 3, 3, 2, 1, 0],
+    [0, 1, 2, 2, 2, 2, 2, 2, 1, 0],
+    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
+    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
+    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
+    [0, 0, 0, 6, 6, 6, 6, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+};
+
 // *** NEW *** Banana sprite (approx 20x15)
 const BANANA_SPRITE = [
   [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -117,6 +243,36 @@ const BANANA_SPRITE = [
   [0, 0, 0, 0, 1, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
+
+// *** NEW *** Skull colors
+const SKULL_COLORS = {
+  1: 0x2c2c2c, // Dark gray outline
+  2: 0xf0f0f0, // Main bone white
+  3: 0x000000, // Black eye sockets
+  4: 0x800000, // Dark red eye glow
+  5: 0x000000, // Black teeth/mouth
+  6: 0x400000, // Dark red jaw
+};
+
+// *** NEW *** Pepe colors
+const PEPE_COLORS = {
+  1: 0x0d5016, // Dark green outline
+  2: 0x4caf50, // Main green body
+  3: 0xffffff, // White eyes
+  4: 0x000000, // Black pupils
+  5: 0xff9800, // Orange nose
+  6: 0xff5722, // Red mouth
+};
+
+// *** NEW *** Doge colors
+const DOGE_COLORS = {
+  1: 0x8b4513, // Brown outline
+  2: 0xdaa520, // Golden main body
+  3: 0x000000, // Black eyes
+  4: 0xffffff, // White eye shine
+  5: 0x000000, // Black nose/mouth
+  6: 0xff69b4, // Pink tongue
+};
 
 // *** NEW *** Banana colors
 const BANANA_COLORS = {
@@ -360,16 +516,75 @@ function addRandomPaths() {
 // *** NEW *** Game constants
 const PLAYER_MAX_HEALTH = 100;
 const BULLET_DAMAGE = 25;
+const MONSTER_DAMAGE = 10;
+const MONSTER_ATTACK_COOLDOWN = 240; // frames between attacks
+const MONSTER_DETECTION_RANGE = 3.0;
+const MONSTER_ATTACK_RANGE = 1.0;
+const MONSTER_SPEED = 0.015;
+const MONSTER_CHASE_SPEED = 0.02;
+
+// *** NEW *** Points system constants
+const POINTS_MONSTER_KILL = 5;
+const POINTS_PLAYER_KILL = 20;
+const POINTS_DEATH_PENALTY = -10;
+
+// *** NEW *** Game timer constants
+const GAME_DURATION = 120 * 60; // 2 minutes at 60fps (120 seconds * 60 fps)
+const RESPAWN_DELAY = 3 * 60; // 3 seconds at 60fps
+const WALL_COLLISION_BUFFER = 0.05; // Buffer zone around player for wall collision
 
 // Players
 const players = [];
+
+// *** NEW *** Monsters
+let monsters = [];
+let deadMonsters = []; // Track dead monsters for respawning
+
+// *** NEW *** Game state variables
+let gameTimer = GAME_DURATION;
+let gameStartTime = 0;
+let gameEnded = false;
+let winner = null;
+
+// *** NEW *** Floating point text system
+let floatingTexts = [];
+
+class Monster {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.targetX = x;
+    this.targetY = y;
+    this.health = 50;
+    this.maxHealth = 50;
+    this.moveSpeed = MONSTER_SPEED;
+    this.isMoving = false;
+    this.animFrame = 0;
+    this.animTimer = 0;
+    this.state = "roaming"; // 'roaming', 'chasing', 'attacking'
+    this.target = null; // Target player
+    this.attackCooldown = 0;
+    this.pathUpdateTimer = 0;
+    this.hitFlashTimer = 0;
+    this.lastX = x;
+    this.lastY = y;
+  }
+}
+
+class DeadMonster {
+  constructor(deathTime) {
+    this.deathTime = deathTime;
+    this.respawnTime = deathTime + 120; // 2 seconds at 60 FPS
+  }
+}
 class Player {
-  constructor(x, y, color, playerId) {
+  constructor(x, y, color, playerId, spriteType = SPRITE_TYPES.AMONGUS) {
     this.x = x;
     this.y = y;
     this.a = 0; // angle
     this.color = color;
     this.playerId = playerId;
+    this.spriteType = spriteType; // *** NEW *** Store selected sprite type
     this.moveSpeed = 0.03;
     this.rotSpeed = 0.02;
     this.isMoving = false;
@@ -385,6 +600,13 @@ class Player {
     // *** NEW *** Weapon animation properties
     this.weaponBobTimer = 0;
     this.weaponFireTimer = 0; // Countdown for fire animation
+    // *** NEW *** Damage visual effects
+    this.hitFlashTimer = 0; // Timer for hit flash effect
+    this.damageScreenTimer = 0; // Timer for screen damage effect
+    // *** NEW *** Points and respawn system
+    this.score = 0;
+    this.respawnTimer = 0; // Timer for respawn delay
+    this.isDead = false; // Flag to track if player is dead and waiting to respawn
   }
 }
 
@@ -398,6 +620,24 @@ class Bullet {
     this.ownerId = ownerId;
     this.speed = 0.1;
     this.lifetime = 100; // Frames before it disappears
+  }
+}
+
+// *** NEW *** Floating text class for point notifications
+class FloatingText {
+  constructor(x, y, text, color = "#ffff00") {
+    this.x = x;
+    this.y = y;
+    this.text = text;
+    this.color = color;
+    this.lifetime = 120; // 2 seconds at 60fps
+    this.velocityY = -0.5; // Float upward
+  }
+
+  update() {
+    this.y += this.velocityY;
+    this.lifetime--;
+    return this.lifetime > 0;
   }
 }
 
@@ -420,13 +660,35 @@ function create() {
     if (currentState === "menu") {
       if (key === "START1") {
         numPlayers = 1;
+        selectedSprites = [SPRITE_TYPES.AMONGUS, SPRITE_TYPES.AMONGUS]; // Default for single player
         startNewGame();
       } else if (key === "START2") {
         numPlayers = 2;
+        currentState = "spriteSelect";
+        selectedSprites = [SPRITE_TYPES.AMONGUS, SPRITE_TYPES.AMONGUS]; // Reset selections
+      }
+    } else if (currentState === "spriteSelect") {
+      // Handle sprite selection for 2-player mode
+      if (key === "P1A" || key === "P1B" || key === "P1C") {
+        // Player 1 sprite cycling
+        const sprites = Object.values(SPRITE_TYPES);
+        const currentIndex = sprites.indexOf(selectedSprites[0]);
+        selectedSprites[0] = sprites[(currentIndex + 1) % sprites.length];
+      } else if (key === "P2A" || key === "P2B" || key === "P2C") {
+        // Player 2 sprite cycling
+        const sprites = Object.values(SPRITE_TYPES);
+        const currentIndex = sprites.indexOf(selectedSprites[1]);
+        selectedSprites[1] = sprites[(currentIndex + 1) % sprites.length];
+      } else if (key === "START1" || key === "START2") {
+        // Start game with selected sprites
         startNewGame();
       }
     } else if (currentState === "game") {
       if (key === "START1" || key === "START2") {
+        currentState = "menu";
+      }
+    } else if (currentState === "gameOver") {
+      if (key === "Escape" || key === "START1" || key === "START2") {
         currentState = "menu";
       }
     }
@@ -441,7 +703,26 @@ function create() {
 function startNewGame() {
   generateMaze();
   initializePlayers();
+  initializeMonsters(); // *** NEW *** Initialize monsters
   bullets = []; // *** NEW *** Clear bullets on new game
+  deadMonsters = []; // *** NEW *** Clear dead monsters on new game
+
+  // *** NEW *** Reset game timer and state
+  gameTimer = GAME_DURATION;
+  gameStartTime = Date.now();
+  gameEnded = false;
+  winner = null;
+
+  // *** NEW *** Reset all player scores and states
+  for (const player of players) {
+    player.score = 0;
+    player.isDead = false;
+    player.respawnTimer = 0;
+  }
+
+  // *** NEW *** Clear floating texts
+  floatingTexts = [];
+
   currentState = "game";
 }
 
@@ -462,8 +743,81 @@ function initializePlayers() {
     const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
     // *** MODIFIED *** Using player colors from the palette
     const playerColor = i === 0 ? PLAYER_COLORS[0][2] : PLAYER_COLORS[1][2];
-    players.push(new Player(spot.x, spot.y, playerColor, i));
+    players.push(
+      new Player(spot.x, spot.y, playerColor, i, selectedSprites[i]),
+    );
     emptySpots.splice(emptySpots.indexOf(spot), 1);
+  }
+}
+
+// *** NEW *** Initialize monsters in the maze
+function initializeMonsters() {
+  monsters = [];
+
+  // Find empty positions for monsters
+  const emptySpots = [];
+  for (let y = 1; y < MAP_SIZE - 1; y++) {
+    for (let x = 1; x < MAP_SIZE - 1; x++) {
+      if (map[y][x] === 0) emptySpots.push({ x: x + 0.5, y: y + 0.5 });
+    }
+  }
+
+  // Spawn 5 monsters randomly
+  const numMonsters = 5;
+  for (let i = 0; i < numMonsters && emptySpots.length > 0; i++) {
+    const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
+    monsters.push(new Monster(spot.x, spot.y));
+    emptySpots.splice(emptySpots.indexOf(spot), 1);
+  }
+}
+
+// *** NEW *** Respawn a monster far from players
+function respawnMonster() {
+  // Find empty positions far from players
+  const emptySpots = [];
+  for (let y = 1; y < MAP_SIZE - 1; y++) {
+    for (let x = 1; x < MAP_SIZE - 1; x++) {
+      if (map[y][x] === 0) {
+        const spot = { x: x + 0.5, y: y + 0.5 };
+
+        // Check distance from all players
+        let farFromPlayers = true;
+        for (const player of players) {
+          const dx = spot.x - player.x;
+          const dy = spot.y - player.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < 5.0) {
+            // Must be at least 5 units away from any player
+            farFromPlayers = false;
+            break;
+          }
+        }
+
+        if (farFromPlayers) {
+          emptySpots.push(spot);
+        }
+      }
+    }
+  }
+
+  // If we found spots far from players, spawn there
+  if (emptySpots.length > 0) {
+    const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
+    monsters.push(new Monster(spot.x, spot.y));
+  } else {
+    // Fallback: spawn at any empty spot (shouldn't happen in normal gameplay)
+    const allEmptySpots = [];
+    for (let y = 1; y < MAP_SIZE - 1; y++) {
+      for (let x = 1; x < MAP_SIZE - 1; x++) {
+        if (map[y][x] === 0) allEmptySpots.push({ x: x + 0.5, y: y + 0.5 });
+      }
+    }
+
+    if (allEmptySpots.length > 0) {
+      const spot =
+        allEmptySpots[Math.floor(Math.random() * allEmptySpots.length)];
+      monsters.push(new Monster(spot.x, spot.y));
+    }
   }
 }
 
@@ -503,6 +857,12 @@ function respawnPlayer(player) {
 
   player.health = player.maxHealth;
   player.a = Math.random() * Math.PI * 2; // Random angle
+  // *** NEW *** Reset damage visual effects
+  player.hitFlashTimer = 0;
+  player.damageScreenTimer = 0;
+  // *** NEW *** Reset respawn state
+  player.isDead = false;
+  player.respawnTimer = 0;
 }
 
 function update() {
@@ -510,10 +870,80 @@ function update() {
 
   if (currentState === "menu") {
     drawMenu();
+  } else if (currentState === "spriteSelect") {
+    drawSpriteSelection();
+  } else if (currentState === "gameOver") {
+    drawGameOver();
   } else {
+    // *** NEW *** Update game timer
+    if (!gameEnded) {
+      gameTimer--;
+      if (gameTimer <= 0) {
+        endGame();
+      }
+    }
+
+    updatePlayerRespawns(); // *** NEW *** Update player respawn timers
+    updateFloatingTexts(); // *** NEW *** Update floating point texts
     handleInput();
     updateBullets(); // *** NEW *** Update bullet logic
+    updateMonsters(); // *** NEW *** Update monster AI
+    updateMonsterRespawns(); // *** NEW *** Update monster respawns
+    updatePlayerEffects(); // *** NEW *** Update player visual effects
     drawGame();
+  }
+}
+
+// *** NEW *** End game and determine winner
+function endGame() {
+  gameEnded = true;
+  currentState = "gameOver";
+
+  // Find winner (player with highest score)
+  let highestScore = -Infinity;
+  winner = null;
+  let tiedPlayers = [];
+
+  for (const player of players) {
+    if (player.score > highestScore) {
+      highestScore = player.score;
+      winner = player;
+      tiedPlayers = [player];
+    } else if (player.score === highestScore) {
+      tiedPlayers.push(player);
+    }
+  }
+
+  // Handle ties - if multiple players have same highest score, no winner
+  if (tiedPlayers.length > 1) {
+    winner = null;
+  }
+}
+
+// *** NEW *** Create floating text notification
+function createFloatingText(x, y, text, color) {
+  floatingTexts.push(new FloatingText(x, y, text, color));
+}
+
+// *** NEW *** Update floating texts
+function updateFloatingTexts() {
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    if (!floatingTexts[i].update()) {
+      floatingTexts.splice(i, 1);
+    }
+  }
+}
+
+// *** NEW *** Update player respawn timers
+function updatePlayerRespawns() {
+  for (const player of players) {
+    if (player.isDead && player.respawnTimer > 0) {
+      player.respawnTimer--;
+      if (player.respawnTimer <= 0) {
+        respawnPlayer(player);
+        player.isDead = false;
+      }
+    }
   }
 }
 
@@ -567,7 +997,7 @@ function drawMenu() {
     .setDepth(1);
 
   scene.add
-    .text(400, 450, "WASD/Arrows: Move & Turn", {
+    .text(400, 430, "WASD/Arrows: Move & Turn", {
       fontSize: "20px",
       color: "#888888",
       fontFamily: "Arial",
@@ -575,15 +1005,460 @@ function drawMenu() {
     .setOrigin(0.5)
     .setDepth(1);
 
+  scene.add
+    .text(400, 460, "Hold I/T + Left/Right: Strafe", {
+      fontSize: "20px",
+      color: "#88ff88",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
   // *** NEW *** Added shoot controls info
   scene.add
-    .text(400, 480, "P1 'U' / P2 'R': Shoot", {
+    .text(400, 490, "P1 'U' / P2 'R': Shoot", {
       fontSize: "20px",
       color: "#ff8888",
       fontFamily: "Arial",
     })
     .setOrigin(0.5)
     .setDepth(1);
+}
+
+// *** NEW *** Draw sprite selection screen
+function drawSpriteSelection() {
+  graphics.fillStyle(0x222222);
+  graphics.fillRect(0, 0, 800, 600);
+
+  // Clear any existing text objects
+  scene.children.getChildren().forEach((child) => {
+    if (child.type === "Text") {
+      child.destroy();
+    }
+  });
+
+  // Title
+  scene.add
+    .text(400, 100, "SELECT YOUR SPRITES", {
+      fontSize: "48px",
+      color: "#ff0000",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  // Player 1 selection
+  scene.add
+    .text(200, 200, "PLAYER 1", {
+      fontSize: "32px",
+      color: "#00ff00",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  const p1SpriteText =
+    selectedSprites[0] === SPRITE_TYPES.AMONGUS
+      ? "AMONG US"
+      : selectedSprites[0] === SPRITE_TYPES.PEPE
+        ? "PEPE"
+        : "DOGE";
+
+  scene.add
+    .text(200, 250, p1SpriteText, {
+      fontSize: "24px",
+      color: "#ffffff",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  scene.add
+    .text(200, 300, "Press U/I/O to change", {
+      fontSize: "18px",
+      color: "#888888",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  // Player 2 selection
+  scene.add
+    .text(600, 200, "PLAYER 2", {
+      fontSize: "32px",
+      color: "#00ffff",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  const p2SpriteText =
+    selectedSprites[1] === SPRITE_TYPES.AMONGUS
+      ? "AMONG US"
+      : selectedSprites[1] === SPRITE_TYPES.PEPE
+        ? "PEPE"
+        : "DOGE";
+
+  scene.add
+    .text(600, 250, p2SpriteText, {
+      fontSize: "24px",
+      color: "#ffffff",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  scene.add
+    .text(600, 300, "Press R/T/Y to change", {
+      fontSize: "18px",
+      color: "#888888",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  // Start game instruction
+  scene.add
+    .text(400, 450, "Press START to begin!", {
+      fontSize: "24px",
+      color: "#ffff00",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  // Draw sprite previews
+  drawSpritePreview(selectedSprites[0], 150, 350);
+  drawSpritePreview(selectedSprites[1], 550, 350);
+}
+
+// *** NEW *** Draw sprite preview
+function drawSpritePreview(spriteType, x, y) {
+  const scale = 3;
+  const size = 10 * scale;
+
+  let sprite, colors;
+  if (spriteType === SPRITE_TYPES.AMONGUS) {
+    sprite = AMONGUS_SPRITES.idle;
+    colors = PLAYER_COLORS[0]; // Use player 1 colors for preview
+  } else if (spriteType === SPRITE_TYPES.PEPE) {
+    sprite = PEPE_SPRITES.idle;
+    colors = PEPE_COLORS;
+  } else if (spriteType === SPRITE_TYPES.DOGE) {
+    sprite = DOGE_SPRITES.idle;
+    colors = DOGE_COLORS;
+  }
+
+  // Draw the sprite
+  for (let py = 0; py < sprite.length; py++) {
+    for (let px = 0; px < sprite[py].length; px++) {
+      const colorIndex = sprite[py][px];
+      if (colorIndex > 0) {
+        const color = colors[colorIndex];
+        if (color !== undefined) {
+          graphics.fillStyle(color);
+          graphics.fillRect(
+            x - size / 2 + px * scale,
+            y - size / 2 + py * scale,
+            scale,
+            scale,
+          );
+        }
+      }
+    }
+  }
+}
+
+// *** NEW *** Draw game over screen
+function drawGameOver() {
+  graphics.fillStyle(0x000000, 1);
+  graphics.fillRect(0, 0, 800, 600);
+
+  // Title
+  graphics.fillStyle(0xffffff, 1);
+  scene.add
+    .text(400, 150, "GAME OVER", {
+      fontSize: "48px",
+      color: "#ffffff",
+      fontFamily: "monospace",
+    })
+    .setOrigin(0.5);
+
+  // Timer display
+  scene.add
+    .text(400, 200, "Time's Up!", {
+      fontSize: "24px",
+      color: "#ffff00",
+      fontFamily: "monospace",
+    })
+    .setOrigin(0.5);
+
+  // Winner announcement
+  if (winner) {
+    scene.add
+      .text(400, 250, `Winner: Player ${winner.playerId + 1}`, {
+        fontSize: "32px",
+        color: "#00ff00",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    scene.add
+      .text(400, 300, `Final Score: ${winner.score} points`, {
+        fontSize: "24px",
+        color: "#00ff00",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+  } else {
+    scene.add
+      .text(400, 250, "It's a Tie!", {
+        fontSize: "32px",
+        color: "#ffaa00",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+  }
+
+  // Scores for all players
+  scene.add
+    .text(400, 380, "Final Scores:", {
+      fontSize: "20px",
+      color: "#ffffff",
+      fontFamily: "monospace",
+    })
+    .setOrigin(0.5);
+
+  for (let i = 0; i < players.length; i++) {
+    const player = players[i];
+    scene.add
+      .text(
+        400,
+        410 + i * 25,
+        `Player ${player.playerId + 1}: ${player.score} points`,
+        {
+          fontSize: "18px",
+          color: "#ffffff",
+          fontFamily: "monospace",
+        },
+      )
+      .setOrigin(0.5);
+  }
+
+  // Restart instruction
+  scene.add
+    .text(400, 520, "Press ESC to return to menu", {
+      fontSize: "16px",
+      color: "#888888",
+      fontFamily: "monospace",
+    })
+    .setOrigin(0.5);
+}
+
+// *** NEW *** Update player visual effects timers
+function updatePlayerEffects() {
+  for (const player of players) {
+    // Update hit flash timer
+    if (player.hitFlashTimer > 0) {
+      player.hitFlashTimer--;
+    }
+
+    // Update damage screen timer
+    if (player.damageScreenTimer > 0) {
+      player.damageScreenTimer--;
+    }
+  }
+}
+
+// *** NEW *** Update monster AI and behavior
+function updateMonsters() {
+  for (const monster of monsters) {
+    // Update animation
+    monster.animTimer++;
+    if (monster.animTimer > 15) {
+      monster.animTimer = 0;
+      monster.animFrame = (monster.animFrame + 1) % 2;
+    }
+
+    // Update attack cooldown
+    if (monster.attackCooldown > 0) {
+      monster.attackCooldown--;
+    }
+
+    // Update hit flash timer
+    if (monster.hitFlashTimer > 0) {
+      monster.hitFlashTimer--;
+    }
+
+    // Find nearest player (only alive players)
+    let nearestPlayer = null;
+    let nearestDistance = Infinity;
+
+    for (const player of players) {
+      // *** NEW *** Skip dead players
+      if (player.isDead) continue;
+
+      const dx = player.x - monster.x;
+      const dy = player.y - monster.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestPlayer = player;
+      }
+    }
+
+    // State machine
+    if (nearestPlayer && nearestDistance < MONSTER_DETECTION_RANGE) {
+      if (nearestDistance < MONSTER_ATTACK_RANGE) {
+        // Attack state
+        monster.state = "attacking";
+        monster.target = nearestPlayer;
+
+        // Check if player is in attack range
+        if (nearestDistance <= MONSTER_ATTACK_RANGE) {
+          if (monster.attackCooldown === 0) {
+            // Attack player
+            nearestPlayer.health -= MONSTER_DAMAGE;
+            nearestPlayer.hitFlashTimer = 20;
+            nearestPlayer.damageScreenTimer = 15;
+            monster.attackCooldown = MONSTER_ATTACK_COOLDOWN;
+
+            if (nearestPlayer.health <= 0) {
+              // *** NEW *** Deduct points for death by monster
+              nearestPlayer.score += POINTS_DEATH_PENALTY;
+              createFloatingText(
+                nearestPlayer.x * 50,
+                nearestPlayer.y * 50,
+                `${POINTS_DEATH_PENALTY}`,
+                "#ff0000",
+              );
+
+              // *** NEW *** Reset health and start respawn timer
+              nearestPlayer.health = 0;
+              nearestPlayer.isDead = true;
+              nearestPlayer.respawnTimer = RESPAWN_DELAY;
+            }
+          } else {
+            monster.attackCooldown--;
+          }
+        }
+      } else {
+        // Chase state
+        monster.state = "chasing";
+        monster.target = nearestPlayer;
+        monster.targetX = nearestPlayer.x;
+        monster.targetY = nearestPlayer.y;
+      }
+    } else {
+      // Roaming state
+      monster.state = "roaming";
+      monster.target = null;
+
+      // Update roaming target occasionally
+      monster.pathUpdateTimer++;
+      if (monster.pathUpdateTimer > 120) {
+        // Every 2 seconds
+        monster.pathUpdateTimer = 0;
+
+        // Find a new random target nearby
+        const attempts = 10;
+        for (let i = 0; i < attempts; i++) {
+          const newX = monster.x + (Math.random() - 0.5) * 4;
+          const newY = monster.y + (Math.random() - 0.5) * 4;
+
+          const mapX = Math.floor(newX);
+          const mapY = Math.floor(newY);
+
+          if (
+            mapX > 0 &&
+            mapX < MAP_SIZE - 1 &&
+            mapY > 0 &&
+            mapY < MAP_SIZE - 1 &&
+            map[mapY][mapX] === 0
+          ) {
+            monster.targetX = newX;
+            monster.targetY = newY;
+            break;
+          }
+        }
+      }
+    }
+
+    // Movement
+    const dx = monster.targetX - monster.x;
+    const dy = monster.targetY - monster.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > 0.1) {
+      const speed =
+        monster.state === "chasing" ? MONSTER_CHASE_SPEED : MONSTER_SPEED;
+      const moveX = (dx / distance) * speed;
+      const moveY = (dy / distance) * speed;
+
+      // Check collision before moving
+      const newX = monster.x + moveX;
+      const newY = monster.y + moveY;
+
+      const mapX = Math.floor(newX);
+      const mapY = Math.floor(newY);
+
+      if (
+        mapX > 0 &&
+        mapX < MAP_SIZE - 1 &&
+        mapY > 0 &&
+        mapY < MAP_SIZE - 1 &&
+        map[mapY][mapX] === 0
+      ) {
+        // Check collision with other monsters
+        let collision = false;
+        for (const other of monsters) {
+          if (other !== monster) {
+            const odx = newX - other.x;
+            const ody = newY - other.y;
+            const odist = Math.sqrt(odx * odx + ody * ody);
+            if (odist < 0.4) {
+              collision = true;
+              break;
+            }
+          }
+        }
+
+        if (!collision) {
+          monster.lastX = monster.x;
+          monster.lastY = monster.y;
+          monster.x = newX;
+          monster.y = newY;
+          monster.isMoving = true;
+        } else {
+          monster.isMoving = false;
+        }
+      } else {
+        monster.isMoving = false;
+        // If blocked, find new target
+        if (monster.state === "roaming") {
+          monster.pathUpdateTimer = 120; // Force new target next frame
+        }
+      }
+    } else {
+      monster.isMoving = false;
+    }
+  }
+}
+
+// *** NEW *** Update monster respawn system
+function updateMonsterRespawns() {
+  const currentTime = Date.now();
+
+  // Check if any dead monsters should respawn
+  for (let i = deadMonsters.length - 1; i >= 0; i--) {
+    const deadMonster = deadMonsters[i];
+    if (currentTime >= deadMonster.respawnTime) {
+      // Time to respawn this monster
+      respawnMonster();
+      deadMonsters.splice(i, 1); // Remove from dead list
+    }
+  }
 }
 
 // *** NEW *** Update bullet physics and collisions
@@ -626,10 +1501,75 @@ function updateBullets() {
         p.health -= BULLET_DAMAGE;
         bullets.splice(i, 1); // Remove bullet
 
+        // *** NEW *** Add visual damage effects
+        p.hitFlashTimer = 20; // Flash for 20 frames
+        p.damageScreenTimer = 15; // Screen effect for 15 frames
+
         if (p.health <= 0) {
-          respawnPlayer(p);
+          // *** NEW *** Award points to shooter and deduct from victim
+          const shooter = players.find(
+            (player) => player.playerId === b.ownerId,
+          );
+          if (shooter) {
+            shooter.score += POINTS_PLAYER_KILL;
+            createFloatingText(
+              shooter.x * 50,
+              shooter.y * 50,
+              `+${POINTS_PLAYER_KILL}`,
+              "#00ff00",
+            );
+          }
+          p.score += POINTS_DEATH_PENALTY;
+          createFloatingText(
+            p.x * 50,
+            p.y * 50,
+            `${POINTS_DEATH_PENALTY}`,
+            "#ff0000",
+          );
+
+          // *** NEW *** Reset health and start respawn timer
+          p.health = 0;
+          p.isDead = true;
+          p.respawnTimer = RESPAWN_DELAY;
         }
         break; // Bullet hits one player and is destroyed
+      }
+    }
+
+    // *** NEW *** Check bullet vs monster collisions
+    for (let j = 0; j < monsters.length; j++) {
+      const monster = monsters[j];
+      const dx = b.x - monster.x;
+      const dy = b.y - monster.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const monsterRadius = 0.3;
+
+      if (dist < monsterRadius) {
+        // Hit monster!
+        monster.health -= BULLET_DAMAGE;
+        monster.hitFlashTimer = 15; // Flash for 15 frames
+        bullets.splice(i, 1); // Remove bullet
+
+        if (monster.health <= 0) {
+          // *** NEW *** Award points to shooter for killing monster
+          const shooter = players.find(
+            (player) => player.playerId === b.ownerId,
+          );
+          if (shooter) {
+            shooter.score += POINTS_MONSTER_KILL;
+            createFloatingText(
+              shooter.x * 50,
+              shooter.y * 50,
+              `+${POINTS_MONSTER_KILL}`,
+              "#ffff00",
+            );
+          }
+
+          // Add to dead monsters for respawning
+          deadMonsters.push(new DeadMonster(Date.now()));
+          monsters.splice(j, 1); // Remove dead monster
+        }
+        break;
       }
     }
   }
@@ -649,6 +1589,11 @@ function handleInput() {
     const p = players[i];
     const prefix = i === 0 ? "P1" : "P2";
 
+    // *** NEW *** Skip input handling for dead players
+    if (p.isDead) {
+      continue;
+    }
+
     // *** NEW *** Update cooldown
     if (p.shootCooldown > 0) {
       p.shootCooldown--;
@@ -663,24 +1608,50 @@ function handleInput() {
     p.lastY = p.y;
     let moved = false;
 
-    // Rotation
+    // Check if strafe mode is active (B button held)
+    const strafeMode = keys[prefix + "B"];
+
+    // Rotation and Strafing
     if (keys[prefix + "L"]) {
-      p.a -= p.rotSpeed;
-      moved = true;
+      if (strafeMode) {
+        // Strafe left (move perpendicular to facing direction)
+        const strafeAngle = p.a - Math.PI / 2; // 90 degrees left
+        const newX = p.x + Math.cos(strafeAngle) * p.moveSpeed;
+        const newY = p.y + Math.sin(strafeAngle) * p.moveSpeed;
+        if (!isWallCollision(newX, newY) && !isPlayerCollision(newX, newY, i)) {
+          p.x = newX;
+          p.y = newY;
+          moved = true;
+        }
+      } else {
+        // Normal rotation left
+        p.a -= p.rotSpeed;
+        moved = true;
+      }
     }
     if (keys[prefix + "R"]) {
-      p.a += p.rotSpeed;
-      moved = true;
+      if (strafeMode) {
+        // Strafe right (move perpendicular to facing direction)
+        const strafeAngle = p.a + Math.PI / 2; // 90 degrees right
+        const newX = p.x + Math.cos(strafeAngle) * p.moveSpeed;
+        const newY = p.y + Math.sin(strafeAngle) * p.moveSpeed;
+        if (!isWallCollision(newX, newY) && !isPlayerCollision(newX, newY, i)) {
+          p.x = newX;
+          p.y = newY;
+          moved = true;
+        }
+      } else {
+        // Normal rotation right
+        p.a += p.rotSpeed;
+        moved = true;
+      }
     }
 
     // Movement
     if (keys[prefix + "U"]) {
       const newX = p.x + Math.cos(p.a) * p.moveSpeed;
       const newY = p.y + Math.sin(p.a) * p.moveSpeed;
-      if (
-        map[Math.floor(newY)][Math.floor(newX)] === 0 &&
-        !isPlayerCollision(newX, newY, i)
-      ) {
+      if (!isWallCollision(newX, newY) && !isPlayerCollision(newX, newY, i)) {
         p.x = newX;
         p.y = newY;
         moved = true;
@@ -689,10 +1660,7 @@ function handleInput() {
     if (keys[prefix + "D"]) {
       const newX = p.x - Math.cos(p.a) * p.moveSpeed;
       const newY = p.y - Math.sin(p.a) * p.moveSpeed;
-      if (
-        map[Math.floor(newY)][Math.floor(newX)] === 0 &&
-        !isPlayerCollision(newX, newY, i)
-      ) {
+      if (!isWallCollision(newX, newY) && !isPlayerCollision(newX, newY, i)) {
         p.x = newX;
         p.y = newY;
         moved = true;
@@ -725,6 +1693,39 @@ function handleInput() {
   }
 }
 
+// *** NEW *** Check wall collision with buffer zone around player
+function isWallCollision(x, y, buffer = WALL_COLLISION_BUFFER) {
+  // Check multiple points around the player position
+  const checkPoints = [
+    [x, y], // Center
+    [x - buffer, y - buffer], // Top-left
+    [x + buffer, y - buffer], // Top-right
+    [x - buffer, y + buffer], // Bottom-left
+    [x + buffer, y + buffer], // Bottom-right
+    [x - buffer, y], // Left
+    [x + buffer, y], // Right
+    [x, y - buffer], // Top
+    [x, y + buffer], // Bottom
+  ];
+
+  for (const [checkX, checkY] of checkPoints) {
+    const mapX = Math.floor(checkX);
+    const mapY = Math.floor(checkY);
+
+    // Check bounds
+    if (mapX < 0 || mapX >= MAP_SIZE || mapY < 0 || mapY >= MAP_SIZE) {
+      return true; // Out of bounds is a collision
+    }
+
+    // Check if position is a wall
+    if (map[mapY][mapX] === 1) {
+      return true; // Wall collision detected
+    }
+  }
+
+  return false; // No collision
+}
+
 function isPlayerCollision(newX, newY, playerIndex) {
   const collisionRadius = 1; // Collision radius for players
 
@@ -754,9 +1755,78 @@ function drawGame() {
     drawPlayer3D(players[0], 0, 0, 398, 600);
     drawPlayer3D(players[1], 402, 0, 398, 600);
   }
+
+  // *** NEW *** Draw game timer
+  const timeRemaining = Math.max(0, gameTimer);
+  const minutes = Math.floor(timeRemaining / 3600);
+  const seconds = Math.floor((timeRemaining % 3600) / 60);
+  const timeText = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+  scene.add
+    .text(400, 20, timeText, {
+      fontSize: "24px",
+      color: gameTimer < 600 ? "#ff0000" : "#ffffff", // Red when less than 10 seconds
+      fontFamily: "monospace",
+    })
+    .setOrigin(0.5);
+
+  // *** NEW *** Draw player scores
+  for (let i = 0; i < players.length; i++) {
+    const player = players[i];
+    const xPos = numPlayers === 1 ? 100 : i === 0 ? 100 : 700;
+
+    scene.add
+      .text(xPos, 50, `P${i + 1}: ${player.score}`, {
+        fontSize: "18px",
+        color: "#00ff00",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+  }
+
+  // *** NEW *** Draw floating point texts
+  for (const floatingText of floatingTexts) {
+    const alpha = floatingText.lifetime / 120; // Fade out over time
+    scene.add
+      .text(floatingText.x, floatingText.y, floatingText.text, {
+        fontSize: "16px",
+        color: floatingText.color,
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5)
+      .setAlpha(alpha);
+  }
 }
 
 function drawPlayer3D(player, offsetX, offsetY, width, height) {
+  // *** NEW *** If player is dead, show black screen with respawn message
+  if (player.isDead) {
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillRect(offsetX, offsetY, width, height);
+
+    const respawnSeconds = Math.ceil(player.respawnTimer / 60);
+    const centerX = offsetX + width / 2;
+    const centerY = offsetY + height / 2;
+
+    scene.add
+      .text(centerX, centerY - 30, "YOU DIED", {
+        fontSize: "32px",
+        color: "#ff0000",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    scene.add
+      .text(centerX, centerY + 10, `Respawning in ${respawnSeconds}...`, {
+        fontSize: "20px",
+        color: "#ffffff",
+        fontFamily: "monospace",
+      })
+      .setOrigin(0.5);
+
+    return;
+  }
+
   const rays = 60; // Ray count for performance
   const fov = Math.PI / 3; // 60 degrees
 
@@ -789,6 +1859,9 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
   // Draw other players as sprites with occlusion
   drawPlayerSprites(player, offsetX, offsetY, width, height, wallDistances);
 
+  // *** NEW *** Draw monsters as sprites with occlusion
+  drawMonsterSprites(player, offsetX, offsetY, width, height, wallDistances);
+
   // *** NEW *** Draw bullets as sprites with occlusion
   drawBulletSprites(player, offsetX, offsetY, width, height, wallDistances);
 
@@ -799,23 +1872,62 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
   // Draw minimap in corner
   drawMinimap(player, offsetX + 10, offsetY + 10);
 
-  // *** NEW *** Draw Health Bar
-  const healthBarWidth = width * 0.4;
-  const healthBarHeight = 20;
-  const healthBarX = offsetX + (width - healthBarWidth) / 2;
-  const healthBarY = offsetY + height - healthBarHeight - 10;
-  // Background
-  graphics.fillStyle(0x550000); // Dark red
-  graphics.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-  // Current Health
-  const healthPercent = Math.max(0, player.health / player.maxHealth);
-  graphics.fillStyle(0x00ff00); // Bright green
-  graphics.fillRect(
-    healthBarX,
-    healthBarY,
-    healthBarWidth * healthPercent,
-    healthBarHeight,
+  // *** NEW *** Draw Health Percentage (Pixel Art Doom style)
+  const healthValue = Math.max(0, Math.floor(player.health));
+  drawPixelHealthDisplay(
+    offsetX + width - 80,
+    offsetY + height - 50,
+    healthValue,
   );
+
+  // *** NEW *** Draw damage screen effect
+  if (player.damageScreenTimer > 0) {
+    const intensity = player.damageScreenTimer / 15; // Fade out over 15 frames
+
+    // Red border effect for damage indication
+    const borderThickness = Math.floor(intensity * 8 + 3);
+    const redShade = Math.floor(255 * intensity);
+    graphics.fillStyle((redShade << 16) | 0x000000); // Red color that fades
+
+    // Top border
+    graphics.fillRect(offsetX, offsetY, width, borderThickness);
+    // Bottom border
+    graphics.fillRect(
+      offsetX,
+      offsetY + height - borderThickness,
+      width,
+      borderThickness,
+    );
+    // Left border
+    graphics.fillRect(offsetX, offsetY, borderThickness, height);
+    // Right border
+    graphics.fillRect(
+      offsetX + width - borderThickness,
+      offsetY,
+      borderThickness,
+      height,
+    );
+
+    // Additional pulsing center cross effect for more visibility
+    if (Math.floor(player.damageScreenTimer / 3) % 2 === 0) {
+      const crossThickness = 2;
+      graphics.fillStyle(0xff0000);
+      // Horizontal line
+      graphics.fillRect(
+        offsetX + width * 0.3,
+        offsetY + height / 2 - crossThickness / 2,
+        width * 0.4,
+        crossThickness,
+      );
+      // Vertical line
+      graphics.fillRect(
+        offsetX + width / 2 - crossThickness / 2,
+        offsetY + height * 0.3,
+        crossThickness,
+        height * 0.4,
+      );
+    }
+  }
 }
 
 function castRay(startX, startY, angle, player) {
@@ -918,13 +2030,13 @@ function drawPlayerSprites(
     const spriteY = groundY - spriteHeight; // Bottom of sprite touches the ground
 
     // Draw the sprite with wall occlusion
-    drawAmongUsSpriteWithOcclusion(
+    drawPlayerSpriteWithOcclusion(
       offsetX,
       offsetX + screenX - spriteWidth / 2,
       offsetY + spriteY,
       spriteWidth,
       spriteHeight,
-      otherPlayer.playerId,
+      otherPlayer,
       otherPlayer.isMoving
         ? otherPlayer.animFrame === 0
           ? "walk1"
@@ -940,7 +2052,82 @@ function drawPlayerSprites(
   }
 }
 
-// *** NEW *** Function to draw bullets
+// *** NEW *** Draw monster sprites in 3D view
+function drawMonsterSprites(
+  player,
+  offsetX,
+  offsetY,
+  width,
+  height,
+  wallDistances,
+) {
+  if (monsters.length === 0) return;
+
+  // Get 3D rendering parameters
+  const fov = Math.PI / 3;
+  const rays = wallDistances.length;
+
+  for (const monster of monsters) {
+    // Calculate distance and angle to monster
+    const dx = monster.x - player.x;
+    const dy = monster.y - player.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Skip if monster is too far away
+    if (distance > 15) continue;
+
+    // Check if monster has line of sight to player
+    if (!hasLineOfSight(player.x, player.y, monster.x, monster.y)) continue;
+
+    // Calculate angle to monster relative to player's facing direction
+    const angleToMonster = Math.atan2(dy, dx);
+    let relativeAngle = angleToMonster - player.a;
+
+    // Normalize angle to [-π, π]
+    while (relativeAngle > Math.PI) relativeAngle -= 2 * Math.PI;
+    while (relativeAngle < -Math.PI) relativeAngle += 2 * Math.PI;
+
+    // Check if monster is within field of view
+    if (Math.abs(relativeAngle) > fov / 2 + 0.2) continue;
+
+    // Calculate screen position
+    const projectedDistance = distance * Math.cos(relativeAngle);
+    if (projectedDistance <= 0.1) continue;
+
+    const screenX = (relativeAngle / (fov / 2)) * (width / 2) + width / 2;
+
+    // Calculate sprite size based on distance (smaller for monsters)
+    const spriteHeight = Math.min(
+      (height * 0.6) / projectedDistance,
+      height * 0.7,
+    );
+    const spriteWidth = spriteHeight;
+
+    // Calculate ground level
+    const baseWallHeight = (height * 0.8) / projectedDistance;
+    const wallBottom = height / 2 + baseWallHeight / 2;
+    const groundY = Math.min(wallBottom, height);
+    const spriteY = groundY - spriteHeight;
+
+    // Draw the monster sprite with wall occlusion
+    drawMonsterSpriteWithOcclusion(
+      offsetX,
+      offsetX + screenX - spriteWidth / 2,
+      offsetY + spriteY,
+      spriteWidth,
+      spriteHeight,
+      monster,
+      monster.isMoving ? (monster.animFrame === 0 ? "walk1" : "walk2") : "idle",
+      wallDistances,
+      projectedDistance,
+      screenX - spriteWidth / 2,
+      screenX + spriteWidth / 2,
+      width,
+      rays,
+    );
+  }
+}
+
 function drawBulletSprites(
   viewerPlayer,
   offsetX,
@@ -1095,13 +2282,13 @@ function drawWeapon(player, offsetX, offsetY, width, height) {
   drawSprite(BANANA_SPRITE, BANANA_COLORS, x, y, w, h);
 }
 
-function drawAmongUsSpriteWithOcclusion(
-  offsetX, // <--- ADD THIS
+function drawPlayerSpriteWithOcclusion(
+  offsetX,
   x,
   y,
   width,
   height,
-  playerId,
+  player,
   animFrame,
   wallDistances,
   spriteDistance,
@@ -1110,9 +2297,45 @@ function drawAmongUsSpriteWithOcclusion(
   screenWidth,
   rays,
 ) {
-  const sprite = AMONGUS_SPRITES[animFrame];
-  const colors = PLAYER_COLORS[playerId];
-  const pixelWidth = width / 10; // Among Us sprites are 10x10
+  let sprite, colors;
+
+  if (player.spriteType === SPRITE_TYPES.AMONGUS) {
+    sprite = AMONGUS_SPRITES[animFrame];
+    colors = PLAYER_COLORS[player.playerId];
+  } else if (player.spriteType === SPRITE_TYPES.PEPE) {
+    sprite = PEPE_SPRITES[animFrame];
+    colors = PEPE_COLORS;
+  } else if (player.spriteType === SPRITE_TYPES.DOGE) {
+    sprite = DOGE_SPRITES[animFrame];
+    colors = DOGE_COLORS;
+  } else {
+    // Default to Among Us if sprite type is unknown
+    sprite = AMONGUS_SPRITES[animFrame];
+    colors = PLAYER_COLORS[player.playerId];
+  }
+
+  // *** NEW *** Apply damage flash effect to colors
+  if (player.hitFlashTimer > 0) {
+    const flashIntensity = Math.sin(player.hitFlashTimer * 0.8) * 0.5 + 0.5;
+    colors = { ...colors }; // Create a copy
+    for (let colorKey in colors) {
+      // Blend with red for damage flash
+      const originalColor = colors[colorKey];
+      const r = (originalColor >> 16) & 0xff;
+      const g = (originalColor >> 8) & 0xff;
+      const b = originalColor & 0xff;
+
+      // Mix with red based on flash intensity
+      const newR = Math.min(255, r + flashIntensity * (255 - r));
+      const newG = Math.max(0, g - flashIntensity * g * 0.7);
+      const newB = Math.max(0, b - flashIntensity * b * 0.7);
+
+      colors[colorKey] =
+        (Math.floor(newR) << 16) | (Math.floor(newG) << 8) | Math.floor(newB);
+    }
+  }
+
+  const pixelWidth = width / 10; // All sprites are 10x10
   const pixelHeight = height / 10;
 
   for (let sy = 0; sy < 10; sy++) {
@@ -1147,6 +2370,45 @@ function drawAmongUsSpriteWithOcclusion(
   }
 }
 
+// *** DEPRECATED *** Keep for compatibility but redirect to new function
+function drawAmongUsSpriteWithOcclusion(
+  offsetX,
+  x,
+  y,
+  width,
+  height,
+  playerId,
+  animFrame,
+  wallDistances,
+  spriteDistance,
+  spriteLeftX,
+  spriteRightX,
+  screenWidth,
+  rays,
+) {
+  // Create a mock player object for compatibility
+  const mockPlayer = {
+    playerId: playerId,
+    spriteType: SPRITE_TYPES.AMONGUS,
+  };
+
+  drawPlayerSpriteWithOcclusion(
+    offsetX,
+    x,
+    y,
+    width,
+    height,
+    mockPlayer,
+    animFrame,
+    wallDistances,
+    spriteDistance,
+    spriteLeftX,
+    spriteRightX,
+    screenWidth,
+    rays,
+  );
+}
+
 // *** NEW *** Simple occlusion check for a single rectangle (bullet)
 function drawBulletSpriteWithOcclusion(
   offsetX,
@@ -1175,10 +2437,123 @@ function drawBulletSpriteWithOcclusion(
   }
 }
 
+// *** MODIFIED *** Generic sprite drawing function that handles different sprite types
+function drawPlayerSprite(x, y, width, height, player, animFrame) {
+  let sprite, colors;
+
+  if (player.spriteType === SPRITE_TYPES.AMONGUS) {
+    sprite = AMONGUS_SPRITES[animFrame];
+    colors = PLAYER_COLORS[player.playerId];
+  } else if (player.spriteType === SPRITE_TYPES.PEPE) {
+    sprite = PEPE_SPRITES[animFrame];
+    colors = PEPE_COLORS;
+  } else if (player.spriteType === SPRITE_TYPES.DOGE) {
+    sprite = DOGE_SPRITES[animFrame];
+    colors = DOGE_COLORS;
+  } else {
+    // Default to Among Us if sprite type is unknown
+    sprite = AMONGUS_SPRITES[animFrame];
+    colors = PLAYER_COLORS[player.playerId];
+  }
+
+  // *** NEW *** Apply damage flash effect to colors
+  if (player.hitFlashTimer > 0) {
+    const flashIntensity = Math.sin(player.hitFlashTimer * 0.8) * 0.5 + 0.5;
+    colors = { ...colors }; // Create a copy
+    for (let colorKey in colors) {
+      // Blend with red for damage flash
+      const originalColor = colors[colorKey];
+      const r = (originalColor >> 16) & 0xff;
+      const g = (originalColor >> 8) & 0xff;
+      const b = originalColor & 0xff;
+
+      // Mix with red based on flash intensity
+      const newR = Math.min(255, r + flashIntensity * (255 - r));
+      const newG = Math.max(0, g - flashIntensity * g * 0.7);
+      const newB = Math.max(0, b - flashIntensity * b * 0.7);
+
+      colors[colorKey] =
+        (Math.floor(newR) << 16) | (Math.floor(newG) << 8) | Math.floor(newB);
+    }
+  }
+
+  drawSprite(sprite, colors, x, y, width, height);
+}
+
+// *** NEW *** Draw monster sprite with occlusion
+function drawMonsterSpriteWithOcclusion(
+  offsetX,
+  x,
+  y,
+  width,
+  height,
+  monster,
+  animFrame,
+  wallDistances,
+  spriteDistance,
+  spriteLeftX,
+  spriteRightX,
+  screenWidth,
+  rays,
+) {
+  const sprite = SKULL_SPRITES[animFrame];
+  let colors = SKULL_COLORS;
+
+  // Apply damage flash effect to colors
+  if (monster.hitFlashTimer > 0) {
+    const flashIntensity = Math.sin(monster.hitFlashTimer * 0.8) * 0.5 + 0.5;
+    colors = { ...colors }; // Create a copy
+    for (let colorKey in colors) {
+      // Blend with red for damage flash
+      const originalColor = colors[colorKey];
+      const r = (originalColor >> 16) & 0xff;
+      const g = (originalColor >> 8) & 0xff;
+      const b = originalColor & 0xff;
+
+      // Mix with red based on flash intensity
+      const newR = Math.min(255, r + flashIntensity * (255 - r));
+      const newG = Math.max(0, g - flashIntensity * g * 0.7);
+      const newB = Math.max(0, b - flashIntensity * b * 0.7);
+
+      colors[colorKey] =
+        (Math.floor(newR) << 16) | (Math.floor(newG) << 8) | Math.floor(newB);
+    }
+  }
+
+  const pixelWidth = width / 10;
+  const pixelHeight = height / 10;
+
+  for (let sy = 0; sy < 10; sy++) {
+    for (let sx = 0; sx < 10; sx++) {
+      const colorIndex = sprite[sy][sx];
+      if (colorIndex === 0) continue;
+
+      const pixelScreenX = x + sx * pixelWidth;
+      const pixelRelativeX = pixelScreenX - offsetX;
+      const rayIndex = Math.floor((pixelRelativeX / screenWidth) * rays);
+
+      if (rayIndex >= 0 && rayIndex < rays) {
+        const wallDistanceAtPixel = wallDistances[rayIndex];
+
+        if (spriteDistance <= wallDistanceAtPixel + 0.01) {
+          const color = colors[colorIndex] || 0xffffff;
+          graphics.fillStyle(color);
+          graphics.fillRect(
+            x + sx * pixelWidth,
+            y + sy * pixelHeight,
+            Math.ceil(pixelWidth),
+            Math.ceil(pixelHeight),
+          );
+        }
+      }
+    }
+  }
+}
+
+// *** DEPRECATED *** Keep for compatibility but redirect to new function
 function drawAmongUsSprite(x, y, width, height, playerId, animFrame) {
   const sprite = AMONGUS_SPRITES[animFrame];
   const colors = PLAYER_COLORS[playerId];
-  // *** MODIFIED *** Call the generic drawSprite function
   drawSprite(sprite, colors, x, y, width, height);
 }
 
@@ -1221,9 +2596,176 @@ function drawMinimap(player, x, y) {
     }
   }
 
+  // *** NEW *** Draw monsters on minimap
+  graphics.fillStyle(0xff0000); // Red for monsters
+  for (const monster of monsters) {
+    graphics.fillRect(
+      x + monster.x * scale - 0.8,
+      y + monster.y * scale - 0.8,
+      1.6,
+      1.6,
+    );
+  }
+
   // *** NEW *** Draw bullets on minimap
   graphics.fillStyle(0xffff00); // Yellow
   for (const b of bullets) {
     graphics.fillRect(x + b.x * scale - 0.5, y + b.y * scale - 0.5, 1, 1);
+  }
+}
+
+// *** NEW *** Pixel art style health display
+function drawPixelHealthDisplay(x, y, healthValue) {
+  const scale = 3;
+
+  // Draw "HEALTH" text in pixel art style
+  const healthText = [
+    [1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1],
+    [1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1],
+    [1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1],
+  ];
+
+  // Draw "HEALTH" label
+  for (let py = 0; py < healthText.length; py++) {
+    for (let px = 0; px < healthText[py].length; px++) {
+      if (healthText[py][px] === 1) {
+        graphics.fillStyle(0xffffff);
+        graphics.fillRect(x + px * scale, y + py * scale, scale, scale);
+      }
+    }
+  }
+
+  // Determine health color
+  const healthColor =
+    healthValue > 75
+      ? 0x00ff00
+      : healthValue > 50
+        ? 0xffff00
+        : healthValue > 25
+          ? 0xff8800
+          : 0xff0000;
+
+  // Draw percentage digits in pixel art
+  const digitY = y + 20;
+
+  // Convert health value to digits
+  const digits = healthValue.toString().padStart(3, "0").split("");
+
+  for (let i = 0; i < digits.length; i++) {
+    drawPixelDigit(x + i * 16, digitY, parseInt(digits[i]), healthColor, scale);
+  }
+
+  // Draw "%" symbol
+  const percentSymbol = [
+    [1, 1, 0, 0, 1],
+    [1, 1, 0, 1, 0],
+    [0, 0, 1, 0, 0],
+    [0, 1, 0, 1, 1],
+    [1, 0, 0, 1, 1],
+  ];
+
+  const percentX = x + 48;
+  for (let py = 0; py < percentSymbol.length; py++) {
+    for (let px = 0; px < percentSymbol[py].length; px++) {
+      if (percentSymbol[py][px] === 1) {
+        graphics.fillStyle(healthColor);
+        graphics.fillRect(
+          percentX + px * scale,
+          digitY + py * scale,
+          scale,
+          scale,
+        );
+      }
+    }
+  }
+}
+
+// *** NEW *** Draw individual pixel art digits
+function drawPixelDigit(x, y, digit, color, scale) {
+  const digitPatterns = {
+    0: [
+      [1, 1, 1],
+      [1, 0, 1],
+      [1, 0, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+    ],
+    1: [
+      [0, 1, 0],
+      [1, 1, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [1, 1, 1],
+    ],
+    2: [
+      [1, 1, 1],
+      [0, 0, 1],
+      [1, 1, 1],
+      [1, 0, 0],
+      [1, 1, 1],
+    ],
+    3: [
+      [1, 1, 1],
+      [0, 0, 1],
+      [1, 1, 1],
+      [0, 0, 1],
+      [1, 1, 1],
+    ],
+    4: [
+      [1, 0, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+      [0, 0, 1],
+      [0, 0, 1],
+    ],
+    5: [
+      [1, 1, 1],
+      [1, 0, 0],
+      [1, 1, 1],
+      [0, 0, 1],
+      [1, 1, 1],
+    ],
+    6: [
+      [1, 1, 1],
+      [1, 0, 0],
+      [1, 1, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+    ],
+    7: [
+      [1, 1, 1],
+      [0, 0, 1],
+      [0, 0, 1],
+      [0, 0, 1],
+      [0, 0, 1],
+    ],
+    8: [
+      [1, 1, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+    ],
+    9: [
+      [1, 1, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+      [0, 0, 1],
+      [1, 1, 1],
+    ],
+  };
+
+  const pattern = digitPatterns[digit];
+  if (!pattern) return;
+
+  graphics.fillStyle(color);
+  for (let py = 0; py < pattern.length; py++) {
+    for (let px = 0; px < pattern[py].length; px++) {
+      if (pattern[py][px] === 1) {
+        graphics.fillRect(x + px * scale, y + py * scale, scale, scale);
+      }
+    }
   }
 }
