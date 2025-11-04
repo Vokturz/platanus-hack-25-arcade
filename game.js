@@ -1,5 +1,6 @@
 // Platanus Hack 25: Doom-like 2.5D Maze Game
 // Navigate through a maze with raycasting 2.5D graphics
+// MODIFIED: Added health, shooting, health bars, and a banana gun
 
 // =============================================================================
 // ARCADE BUTTON MAPPING
@@ -96,6 +97,33 @@ const AMONGUS_SPRITES = {
     [0, 1, 2, 2, 2, 2, 2, 2, 1, 0],
     [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
   ],
+};
+
+// *** NEW *** Banana sprite (approx 20x15)
+const BANANA_SPRITE = [
+  [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 2, 2, 2, 3, 3, 3, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 2, 2, 2, 3, 3, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
+  [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 1, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 1, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+];
+
+// *** NEW *** Banana colors
+const BANANA_COLORS = {
+  1: 0x4a2d0b, // Dark brown outline
+  2: 0xffe135, // Main yellow
+  3: 0xfff7a1, // Light yellow highlight
+  4: 0x804e1c, // Brown tip
 };
 
 // Color palettes for different players (Among Us style)
@@ -354,6 +382,9 @@ class Player {
     this.maxHealth = PLAYER_MAX_HEALTH;
     this.shootCooldown = 0;
     this.shootDelay = 30; // 30 frames cooldown (0.5 seconds at 60fps)
+    // *** NEW *** Weapon animation properties
+    this.weaponBobTimer = 0;
+    this.weaponFireTimer = 0; // Countdown for fire animation
   }
 }
 
@@ -622,6 +653,10 @@ function handleInput() {
     if (p.shootCooldown > 0) {
       p.shootCooldown--;
     }
+    // *** NEW *** Update weapon fire timer
+    if (p.weaponFireTimer > 0) {
+      p.weaponFireTimer--;
+    }
 
     // Store previous position for movement detection
     p.lastX = p.x;
@@ -669,6 +704,8 @@ function handleInput() {
       // Fire a bullet from player's position in their current direction
       bullets.push(new Bullet(p.x, p.y, p.a, p.playerId));
       p.shootCooldown = p.shootDelay;
+      // *** NEW *** Trigger fire animation
+      p.weaponFireTimer = 10; // 10 frames of animation
     }
 
     // Update movement state and animation
@@ -679,6 +716,8 @@ function handleInput() {
         p.animFrame = (p.animFrame + 1) % 2; // Cycle between walk1 and walk2
         p.animTimer = 0;
       }
+      // *** NEW *** Update weapon bob
+      p.weaponBobTimer += 0.2; // Adjust speed as needed
     } else {
       p.animFrame = 0; // Reset to idle
       p.animTimer = 0;
@@ -752,6 +791,10 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
 
   // *** NEW *** Draw bullets as sprites with occlusion
   drawBulletSprites(player, offsetX, offsetY, width, height, wallDistances);
+
+  // *** NEW *** Draw the weapon
+  // This is drawn on top of the 3D world, but before the 2D UI overlays
+  drawWeapon(player, offsetX, offsetY, width, height);
 
   // Draw minimap in corner
   drawMinimap(player, offsetX + 10, offsetY + 10);
@@ -996,6 +1039,62 @@ function hasLineOfSight(x1, y1, x2, y2) {
   return true;
 }
 
+// *** NEW *** Generic sprite drawing function
+function drawSprite(spriteData, colors, x, y, width, height) {
+  const spriteHeight = spriteData.length;
+  if (spriteHeight === 0) return;
+  const spriteWidth = spriteData[0].length;
+  if (spriteWidth === 0) return;
+
+  const pixelWidth = width / spriteWidth;
+  const pixelHeight = height / spriteHeight;
+
+  for (let sy = 0; sy < spriteHeight; sy++) {
+    for (let sx = 0; sx < spriteWidth; sx++) {
+      const colorIndex = spriteData[sy][sx];
+      if (colorIndex === 0) continue; // Transparent pixel
+
+      const color = colors[colorIndex] || 0xffffff;
+      graphics.fillStyle(color);
+      graphics.fillRect(
+        x + sx * pixelWidth,
+        y + sy * pixelHeight,
+        Math.ceil(pixelWidth),
+        Math.ceil(pixelHeight),
+      );
+    }
+  }
+}
+
+// *** NEW *** Function to draw the player's weapon (banana)
+function drawWeapon(player, offsetX, offsetY, width, height) {
+  const spriteWidth = 20;
+  const spriteHeight = 15;
+  const scale = 8; // Make the banana large
+  const w = spriteWidth * scale;
+  const h = spriteHeight * scale;
+
+  // Base position: bottom-center of the viewport
+  let x = offsetX + (width - w) / 2;
+  let y = offsetY + height - h; // Aligned with bottom
+
+  // Add movement bob
+  const bobAmount = player.isMoving ? Math.sin(player.weaponBobTimer) * 10 : 0;
+  y += bobAmount;
+
+  // Add fire "kick" (recoil)
+  // Move "up" and then back down
+  if (player.weaponFireTimer > 0) {
+    const kickProgress = player.weaponFireTimer / 10; // 10 is the initial timer
+    // A simple "kick up"
+    const kickAmount = Math.sin(kickProgress * Math.PI) * 30; // 30 pixels kick
+    y -= kickAmount;
+  }
+
+  // Draw the banana sprite
+  drawSprite(BANANA_SPRITE, BANANA_COLORS, x, y, w, h);
+}
+
 function drawAmongUsSpriteWithOcclusion(
   offsetX, // <--- ADD THIS
   x,
@@ -1079,24 +1178,8 @@ function drawBulletSpriteWithOcclusion(
 function drawAmongUsSprite(x, y, width, height, playerId, animFrame) {
   const sprite = AMONGUS_SPRITES[animFrame];
   const colors = PLAYER_COLORS[playerId];
-  const pixelWidth = width / 10; // Among Us sprites are 10x10
-  const pixelHeight = height / 10;
-
-  for (let sy = 0; sy < 10; sy++) {
-    for (let sx = 0; sx < 10; sx++) {
-      const colorIndex = sprite[sy][sx];
-      if (colorIndex === 0) continue; // Transparent pixel
-
-      const color = colors[colorIndex] || 0xffffff;
-      graphics.fillStyle(color);
-      graphics.fillRect(
-        x + sx * pixelWidth,
-        y + sy * pixelHeight,
-        Math.ceil(pixelWidth),
-        Math.ceil(pixelHeight),
-      );
-    }
-  }
+  // *** MODIFIED *** Call the generic drawSprite function
+  drawSprite(sprite, colors, x, y, width, height);
 }
 
 function drawMinimap(player, x, y) {
