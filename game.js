@@ -10,7 +10,7 @@ const ARCADE_CONTROLS = {
   P1D: ["s"],
   P1L: ["a"],
   P1R: ["d"],
-  P1A: ["u"],
+  P1A: ["u"], // Shoot
   P1B: ["i"],
   P1C: ["o"],
   P1X: ["j"],
@@ -23,7 +23,7 @@ const ARCADE_CONTROLS = {
   P2D: ["ArrowDown"],
   P2L: ["ArrowLeft"],
   P2R: ["ArrowRight"],
-  P2A: ["r"],
+  P2A: ["r"], // Shoot
   P2B: ["t"],
   P2C: ["y"],
   P2X: ["f"],
@@ -329,6 +329,10 @@ function addRandomPaths() {
   }
 }
 
+// *** NEW *** Game constants
+const PLAYER_MAX_HEALTH = 100;
+const BULLET_DAMAGE = 25;
+
 // Players
 const players = [];
 class Player {
@@ -345,6 +349,24 @@ class Player {
     this.animTimer = 0;
     this.lastX = x;
     this.lastY = y;
+    // *** NEW *** Health and shooting properties
+    this.health = PLAYER_MAX_HEALTH;
+    this.maxHealth = PLAYER_MAX_HEALTH;
+    this.shootCooldown = 0;
+    this.shootDelay = 30; // 30 frames cooldown (0.5 seconds at 60fps)
+  }
+}
+
+// *** NEW *** Bullet class
+let bullets = [];
+class Bullet {
+  constructor(x, y, angle, ownerId) {
+    this.x = x;
+    this.y = y;
+    this.angle = angle;
+    this.ownerId = ownerId;
+    this.speed = 0.1;
+    this.lifetime = 100; // Frames before it disappears
   }
 }
 
@@ -388,6 +410,7 @@ function create() {
 function startNewGame() {
   generateMaze();
   initializePlayers();
+  bullets = []; // *** NEW *** Clear bullets on new game
   currentState = "game";
 }
 
@@ -406,10 +429,49 @@ function initializePlayers() {
   // Initialize only active players based on numPlayers
   for (let i = 0; i < numPlayers; i++) {
     const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
-    const colors = [0x00ff00, 0xff0000];
-    players.push(new Player(spot.x, spot.y, colors[i], i));
+    // *** MODIFIED *** Using player colors from the palette
+    const playerColor = i === 0 ? PLAYER_COLORS[0][2] : PLAYER_COLORS[1][2];
+    players.push(new Player(spot.x, spot.y, playerColor, i));
     emptySpots.splice(emptySpots.indexOf(spot), 1);
   }
+}
+
+// *** NEW *** Respawn player function
+function respawnPlayer(player) {
+  const emptySpots = [];
+  for (let y = 1; y < MAP_SIZE - 1; y++) {
+    for (let x = 1; x < MAP_SIZE - 1; x++) {
+      if (map[y][x] === 0) emptySpots.push({ x: x + 0.5, y: y + 0.5 });
+    }
+  }
+
+  if (emptySpots.length > 0) {
+    // Try to find a spot away from other players
+    let bestSpot = emptySpots[0];
+    let maxDist = 0;
+    for (const spot of emptySpots) {
+      let minDistToOther = Infinity;
+      for (const p of players) {
+        if (p === player) continue;
+        const dx = spot.x - p.x;
+        const dy = spot.y - p.y;
+        minDistToOther = Math.min(minDistToOther, dx * dx + dy * dy);
+      }
+      if (minDistToOther > maxDist) {
+        maxDist = minDistToOther;
+        bestSpot = spot;
+      }
+    }
+    player.x = bestSpot.x;
+    player.y = bestSpot.y;
+  } else {
+    // Failsafe, though this shouldn't happen in a valid maze
+    player.x = 1.5;
+    player.y = 1.5;
+  }
+
+  player.health = player.maxHealth;
+  player.a = Math.random() * Math.PI * 2; // Random angle
 }
 
 function update() {
@@ -419,6 +481,7 @@ function update() {
     drawMenu();
   } else {
     handleInput();
+    updateBullets(); // *** NEW *** Update bullet logic
     drawGame();
   }
 }
@@ -480,6 +543,65 @@ function drawMenu() {
     })
     .setOrigin(0.5)
     .setDepth(1);
+
+  // *** NEW *** Added shoot controls info
+  scene.add
+    .text(400, 480, "P1 'U' / P2 'R': Shoot", {
+      fontSize: "20px",
+      color: "#ff8888",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+}
+
+// *** NEW *** Update bullet physics and collisions
+function updateBullets() {
+  // Iterate backwards to safely remove items from array
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+
+    b.lifetime--;
+    if (b.lifetime <= 0) {
+      bullets.splice(i, 1);
+      continue;
+    }
+
+    const newX = b.x + Math.cos(b.angle) * b.speed;
+    const newY = b.y + Math.sin(b.angle) * b.speed;
+
+    // Check for wall collision
+    if (map[Math.floor(newY)][Math.floor(newX)] === 1) {
+      bullets.splice(i, 1);
+      continue;
+    }
+
+    b.x = newX;
+    b.y = newY;
+
+    // Check for player collision
+    for (let j = 0; j < players.length; j++) {
+      const p = players[j];
+      // Don't shoot self
+      if (p.playerId === b.ownerId) continue;
+
+      const dx = b.x - p.x;
+      const dy = b.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const playerRadius = 0.5; // Collision radius for player
+
+      if (dist < playerRadius) {
+        // Hit!
+        p.health -= BULLET_DAMAGE;
+        bullets.splice(i, 1); // Remove bullet
+
+        if (p.health <= 0) {
+          respawnPlayer(p);
+        }
+        break; // Bullet hits one player and is destroyed
+      }
+    }
+  }
 }
 
 function handleInput() {
@@ -495,6 +617,11 @@ function handleInput() {
   for (let i = 0; i < numPlayers; i++) {
     const p = players[i];
     const prefix = i === 0 ? "P1" : "P2";
+
+    // *** NEW *** Update cooldown
+    if (p.shootCooldown > 0) {
+      p.shootCooldown--;
+    }
 
     // Store previous position for movement detection
     p.lastX = p.x;
@@ -535,6 +662,13 @@ function handleInput() {
         p.y = newY;
         moved = true;
       }
+    }
+
+    // *** NEW *** Shooting
+    if (keys[prefix + "A"] && p.shootCooldown <= 0) {
+      // Fire a bullet from player's position in their current direction
+      bullets.push(new Bullet(p.x, p.y, p.a, p.playerId));
+      p.shootCooldown = p.shootDelay;
     }
 
     // Update movement state and animation
@@ -616,8 +750,29 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
   // Draw other players as sprites with occlusion
   drawPlayerSprites(player, offsetX, offsetY, width, height, wallDistances);
 
+  // *** NEW *** Draw bullets as sprites with occlusion
+  drawBulletSprites(player, offsetX, offsetY, width, height, wallDistances);
+
   // Draw minimap in corner
   drawMinimap(player, offsetX + 10, offsetY + 10);
+
+  // *** NEW *** Draw Health Bar
+  const healthBarWidth = width * 0.4;
+  const healthBarHeight = 20;
+  const healthBarX = offsetX + (width - healthBarWidth) / 2;
+  const healthBarY = offsetY + height - healthBarHeight - 10;
+  // Background
+  graphics.fillStyle(0x550000); // Dark red
+  graphics.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+  // Current Health
+  const healthPercent = Math.max(0, player.health / player.maxHealth);
+  graphics.fillStyle(0x00ff00); // Bright green
+  graphics.fillRect(
+    healthBarX,
+    healthBarY,
+    healthBarWidth * healthPercent,
+    healthBarHeight,
+  );
 }
 
 function castRay(startX, startY, angle, player) {
@@ -742,6 +897,74 @@ function drawPlayerSprites(
   }
 }
 
+// *** NEW *** Function to draw bullets
+function drawBulletSprites(
+  viewerPlayer,
+  offsetX,
+  offsetY,
+  width,
+  height,
+  wallDistances,
+) {
+  const fov = Math.PI / 3;
+  const rays = 60;
+
+  for (let i = 0; i < bullets.length; i++) {
+    const bullet = bullets[i];
+
+    // Calculate relative position
+    const dx = bullet.x - viewerPlayer.x;
+    const dy = bullet.y - viewerPlayer.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > 20 || distance < 0.1) {
+      continue; // Too far or too close
+    }
+
+    // Check line of sight
+    if (!hasLineOfSight(viewerPlayer.x, viewerPlayer.y, bullet.x, bullet.y)) {
+      continue;
+    }
+
+    // Calculate angle
+    const angleToBullet = Math.atan2(dy, dx);
+    let relativeAngle = angleToBullet - viewerPlayer.a;
+    while (relativeAngle > Math.PI) relativeAngle -= 2 * Math.PI;
+    while (relativeAngle < -Math.PI) relativeAngle += 2 * Math.PI;
+
+    if (Math.abs(relativeAngle) > fov / 2) {
+      continue; // Outside FOV
+    }
+
+    const projectedDistance = distance * Math.cos(relativeAngle);
+    const screenX = (relativeAngle / fov + 0.5) * width;
+
+    // Sizing (bullets are small)
+    const spriteHeight = Math.max(2, 20 / projectedDistance);
+    const spriteWidth = spriteHeight;
+
+    // Positioning
+    const baseWallHeight = Math.min((height * 0.8) / projectedDistance, height);
+    const wallBottom = height / 2 + baseWallHeight / 2;
+    const groundY = Math.min(wallBottom, height);
+    // Bullets fly mid-air, so let's center them vertically
+    const spriteY = groundY - spriteHeight / 2 - baseWallHeight * 0.2;
+
+    // Draw with occlusion
+    drawBulletSpriteWithOcclusion(
+      offsetX,
+      offsetX + screenX - spriteWidth / 2,
+      offsetY + spriteY,
+      spriteWidth,
+      spriteHeight,
+      wallDistances,
+      projectedDistance,
+      width,
+      rays,
+    );
+  }
+}
+
 function hasLineOfSight(x1, y1, x2, y2) {
   // Cast a ray from viewer to other player to check for walls
   const dx = x2 - x1;
@@ -801,17 +1024,16 @@ function drawAmongUsSpriteWithOcclusion(
       // Calculate world position of this pixel
       const pixelScreenX = x + sx * pixelWidth;
 
-      // --- FIX: Map pixel to ray index, relative to the viewport's offset ---
       const pixelRelativeX = pixelScreenX - offsetX;
       const rayIndex = Math.floor((pixelRelativeX / screenWidth) * rays);
-      // --- END FIX ---
 
       // Check if this pixel is within screen bounds and behind a wall
       if (rayIndex >= 0 && rayIndex < rays) {
         const wallDistanceAtPixel = wallDistances[rayIndex];
 
         // Only draw pixel if sprite is closer than the wall at this screen position
-        if (spriteDistance < wallDistanceAtPixel) {
+        if (spriteDistance <= wallDistanceAtPixel + 0.01) {
+          // Added 0.01 buffer to prevent z-fighting
           const color = colors[colorIndex] || 0xffffff;
           graphics.fillStyle(color);
           graphics.fillRect(
@@ -822,6 +1044,34 @@ function drawAmongUsSpriteWithOcclusion(
           );
         }
       }
+    }
+  }
+}
+
+// *** NEW *** Simple occlusion check for a single rectangle (bullet)
+function drawBulletSpriteWithOcclusion(
+  offsetX,
+  x,
+  y,
+  width,
+  height,
+  wallDistances,
+  spriteDistance,
+  screenWidth,
+  rays,
+) {
+  // Find the center ray for the sprite
+  const pixelRelativeX = x + width / 2 - offsetX;
+  const rayIndex = Math.floor((pixelRelativeX / screenWidth) * rays);
+
+  if (rayIndex >= 0 && rayIndex < rays) {
+    const wallDistanceAtPixel = wallDistances[rayIndex];
+
+    // Only draw if the bullet is closer than the wall
+    if (spriteDistance <= wallDistanceAtPixel + 0.01) {
+      // Added 0.01 buffer
+      graphics.fillStyle(0xffff00); // Yellow bullet
+      graphics.fillRect(x, y, Math.ceil(width), Math.ceil(height));
     }
   }
 }
@@ -870,19 +1120,27 @@ function drawMinimap(player, x, y) {
   // All players on minimap
   for (let i = 0; i < players.length; i++) {
     const p = players[i];
-    graphics.fillStyle(p.color);
-    graphics.fillRect(x + p.x * scale - 1, y + p.y * scale - 1, 3, 3);
+    // *** MODIFIED *** Use player's main body color for minimap
+    const minimapColor = PLAYER_COLORS[p.playerId][2];
+    graphics.fillStyle(minimapColor);
+    graphics.fillRect(x + p.x * scale - 1.5, y + p.y * scale - 1.5, 3, 3);
 
     // Direction line for current player
     if (p === player) {
-      graphics.lineStyle(1, p.color);
+      graphics.lineStyle(1, minimapColor);
       graphics.beginPath();
       graphics.moveTo(x + p.x * scale, y + p.y * scale);
       graphics.lineTo(
-        x + p.x * scale + Math.cos(p.a) * 10,
-        y + p.y * scale + Math.sin(p.a) * 10,
+        x + p.x * scale + Math.cos(p.a) * 5, // Shorter line
+        y + p.y * scale + Math.sin(p.a) * 5,
       );
       graphics.strokePath();
     }
+  }
+
+  // *** NEW *** Draw bullets on minimap
+  graphics.fillStyle(0xffff00); // Yellow
+  for (const b of bullets) {
+    graphics.fillRect(x + b.x * scale - 0.5, y + b.y * scale - 0.5, 1, 1);
   }
 }
