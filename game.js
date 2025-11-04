@@ -1,75 +1,42 @@
-// Platanus Hack 25: Snake Game
-// Navigate the snake around the "PLATANUS HACK ARCADE" title made of blocks!
+// Platanus Hack 25: Doom-like 2.5D Maze Game
+// Navigate through a maze with raycasting 2.5D graphics
 
 // =============================================================================
-// ARCADE BUTTON MAPPING - COMPLETE TEMPLATE
+// ARCADE BUTTON MAPPING
 // =============================================================================
-// Reference: See button-layout.webp at hack.platan.us/assets/images/arcade/
-//
-// Maps arcade button codes to keyboard keys for local testing.
-// Each arcade code can map to multiple keyboard keys (array values).
-// The arcade cabinet sends codes like 'P1U', 'P1A', etc. when buttons are pressed.
-//
-// To use in your game:
-//   if (key === 'P1U') { ... }  // Works on both arcade and local (via keyboard)
-//
-// CURRENT GAME USAGE (Snake):
-//   - P1U/P1D/P1L/P1R (Joystick) → Snake Direction
-//   - P1A (Button A) or START1 (Start Button) → Restart Game
-// =============================================================================
-
 const ARCADE_CONTROLS = {
-  // ===== PLAYER 1 CONTROLS =====
-  // Joystick - Left hand on WASD
-  'P1U': ['w'],
-  'P1D': ['s'],
-  'P1L': ['a'],
-  'P1R': ['d'],
-  'P1DL': null,  // Diagonal down-left (no keyboard default)
-  'P1DR': null,  // Diagonal down-right (no keyboard default)
+  // Player 1 - WASD movement, UI buttons
+  P1U: ["w"],
+  P1D: ["s"],
+  P1L: ["a"],
+  P1R: ["d"],
+  P1A: ["u"],
+  P1B: ["i"],
+  P1C: ["o"],
+  P1X: ["j"],
+  P1Y: ["k"],
+  P1Z: ["l"],
+  START1: ["1", "Enter"],
 
-  // Action Buttons - Right hand on home row area (ergonomic!)
-  // Top row (ABC): U, I, O  |  Bottom row (XYZ): J, K, L
-  'P1A': ['u'],
-  'P1B': ['i'],
-  'P1C': ['o'],
-  'P1X': ['j'],
-  'P1Y': ['k'],
-  'P1Z': ['l'],
-
-  // Start Button
-  'START1': ['1', 'Enter'],
-
-  // ===== PLAYER 2 CONTROLS =====
-  // Joystick - Right hand on Arrow Keys
-  'P2U': ['ArrowUp'],
-  'P2D': ['ArrowDown'],
-  'P2L': ['ArrowLeft'],
-  'P2R': ['ArrowRight'],
-  'P2DL': null,  // Diagonal down-left (no keyboard default)
-  'P2DR': null,  // Diagonal down-right (no keyboard default)
-
-  // Action Buttons - Left hand (avoiding P1's WASD keys)
-  // Top row (ABC): R, T, Y  |  Bottom row (XYZ): F, G, H
-  'P2A': ['r'],
-  'P2B': ['t'],
-  'P2C': ['y'],
-  'P2X': ['f'],
-  'P2Y': ['g'],
-  'P2Z': ['h'],
-
-  // Start Button
-  'START2': ['2']
+  // Player 2 - Arrow keys, alternative buttons
+  P2U: ["ArrowUp"],
+  P2D: ["ArrowDown"],
+  P2L: ["ArrowLeft"],
+  P2R: ["ArrowRight"],
+  P2A: ["r"],
+  P2B: ["t"],
+  P2C: ["y"],
+  P2X: ["f"],
+  P2Y: ["g"],
+  P2Z: ["h"],
+  START2: ["2"],
 };
 
-// Build reverse lookup: keyboard key → arcade button code
 const KEYBOARD_TO_ARCADE = {};
-for (const [arcadeCode, keyboardKeys] of Object.entries(ARCADE_CONTROLS)) {
-  if (keyboardKeys) {
-    // Handle both array and single value
-    const keys = Array.isArray(keyboardKeys) ? keyboardKeys : [keyboardKeys];
-    keys.forEach(key => {
-      KEYBOARD_TO_ARCADE[key] = arcadeCode;
+for (const [code, keys] of Object.entries(ARCADE_CONTROLS)) {
+  if (keys) {
+    (Array.isArray(keys) ? keys : [keys]).forEach((k) => {
+      KEYBOARD_TO_ARCADE[k] = code;
     });
   }
 }
@@ -78,359 +45,511 @@ const config = {
   type: Phaser.AUTO,
   width: 800,
   height: 600,
-  backgroundColor: '#000000',
-  scene: {
-    create: create,
-    update: update
-  }
+  backgroundColor: "#000",
+  scene: { create: create, update: update },
 };
 
 const game = new Phaser.Game(config);
 
-// Game variables
-let snake = [];
-let snakeSize = 15;
-let direction = { x: 1, y: 0 };
-let nextDirection = { x: 1, y: 0 };
-let food;
-let score = 0;
-let scoreText;
-let titleBlocks = [];
-let gameOver = false;
-let moveTimer = 0;
-let moveDelay = 100;  // Faster initial speed (was 150ms)
-let graphics;
+// Create cover image as base64 PNG
+const coverImageData = "";
+let scene,
+  graphics,
+  currentState = "menu";
+let numPlayers = 1;
 
-// Pixel font patterns (5x5 grid for each letter)
-const letters = {
-  P: [[1,1,1,1],[1,0,0,1],[1,1,1,1],[1,0,0,0],[1,0,0,0]],
-  L: [[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,1,1,1]],
-  A: [[0,1,1,0],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
-  T: [[1,1,1,1],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
-  N: [[1,0,0,1],[1,1,0,1],[1,0,1,1],[1,0,0,1],[1,0,0,1]],
-  U: [[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]],
-  S: [[0,1,1,1],[1,0,0,0],[0,1,1,0],[0,0,0,1],[1,1,1,0]],
-  H: [[1,0,0,1],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
-  C: [[0,1,1,1],[1,0,0,0],[1,0,0,0],[1,0,0,0],[0,1,1,1]],
-  K: [[1,0,0,1],[1,0,1,0],[1,1,0,0],[1,0,1,0],[1,0,0,1]],
-  '2': [[1,1,1,0],[0,0,0,1],[0,1,1,0],[1,0,0,0],[1,1,1,1]],
-  '5': [[1,1,1,1],[1,0,0,0],[1,1,1,0],[0,0,0,1],[1,1,1,0]],
-  ':': [[0,0,0,0],[0,1,0,0],[0,0,0,0],[0,1,0,0],[0,0,0,0]],
-  R: [[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,1,0],[1,0,0,1]],
-  D: [[1,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,0]],
-  E: [[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,1,1,1]]
-};
+// Map - 1 = wall, 0 = empty
+const MAP_SIZE = 15;
+let map = [];
 
-// Bold font for ARCADE (filled/solid style)
-const boldLetters = {
-  A: [[1,1,1,1,1],[1,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1],[1,1,0,1,1]],
-  R: [[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,0,1,1]],
-  C: [[1,1,1,1,1],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,1,1,1]],
-  D: [[1,1,1,1,0],[1,1,0,1,1],[1,1,0,1,1],[1,1,0,1,1],[1,1,1,1,0]],
-  E: [[1,1,1,1,1],[1,1,0,0,0],[1,1,1,1,0],[1,1,0,0,0],[1,1,1,1,1]]
-};
+// Generate maze using DFS algorithm from the beginning
+function generateMaze() {
+  // Initialize maze with all walls
+  map = [];
+  for (let y = 0; y < MAP_SIZE; y++) {
+    map[y] = [];
+    for (let x = 0; x < MAP_SIZE; x++) {
+      map[y][x] = 1; // All walls initially
+    }
+  }
 
-function create() {
-  const scene = this;
-  graphics = this.add.graphics();
+  // Generate maze using DFS
+  generateMazeWithDFS();
 
-  // Build "PLATANUS HACK ARCADE" in cyan - centered and grid-aligned
-  // PLATANUS: 8 letters × (4 cols + 1 spacing) = 40 blocks, but last letter no spacing = 39 blocks × 15px = 585px
-  let x = Math.floor((800 - 585) / 2 / snakeSize) * snakeSize;
-  let y = Math.floor(180 / snakeSize) * snakeSize;
-  'PLATANUS'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0x00ffff);
-  });
+  // Remove dead ends to ensure no paths go to no-exit walls
+  eliminateDeadEnds();
 
-  // HACK: 4 letters × (4 cols + 1 spacing) = 20 blocks, but last letter no spacing = 19 blocks × 15px = 285px
-  x = Math.floor((800 - 285) / 2 / snakeSize) * snakeSize;
-  y = Math.floor(280 / snakeSize) * snakeSize;
-  'HACK'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0x00ffff);
-  });
+  // Randomly remove some additional walls for variety
+  addRandomPaths();
+}
 
-  // ARCADE: 6 letters × (5 cols + 1 spacing) = 36 blocks, but last letter no spacing = 35 blocks × 15px = 525px
-  x = Math.floor((800 - 525) / 2 / snakeSize) * snakeSize;
-  y = Math.floor(380 / snakeSize) * snakeSize;
-  'ARCADE'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0xff00ff, true);
-  });
-
-  // Score display
-  scoreText = this.add.text(16, 16, 'Score: 0', {
-    fontSize: '24px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#00ff00'
-  });
-
-  // Instructions
-  this.add.text(400, 560, 'Use Joystick to Move | Avoid Walls, Yourself & The Title!', {
-    fontSize: '16px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#888888',
-    align: 'center'
-  }).setOrigin(0.5);
-
-  // Initialize snake (start top left)
-  snake = [
-    { x: 75, y: 60 },
-    { x: 60, y: 60 },
-    { x: 45, y: 60 }
+// Generate the initial maze structure using DFS
+function generateMazeWithDFS() {
+  const visited = new Set();
+  const directions = [
+    [0, 2],
+    [2, 0],
+    [0, -2],
+    [-2, 0], // Move by 2 to maintain wall structure
   ];
 
-  // Spawn initial food
-  spawnFood();
+  // Start from a random odd position (ensures proper maze structure)
+  let startX =
+    1 + Math.floor(Math.random() * Math.floor((MAP_SIZE - 2) / 2)) * 2;
+  let startY =
+    1 + Math.floor(Math.random() * Math.floor((MAP_SIZE - 2) / 2)) * 2;
 
-  // Keyboard and Arcade Button input
-  this.input.keyboard.on('keydown', (event) => {
-    // Normalize keyboard input to arcade codes for easier testing
-    const key = KEYBOARD_TO_ARCADE[event.key] || event.key;
+  // Make sure starting position is within bounds and odd
+  startX = Math.min(startX, MAP_SIZE - 2);
+  startY = Math.min(startY, MAP_SIZE - 2);
+  if (startX % 2 === 0) startX = Math.max(1, startX - 1);
+  if (startY % 2 === 0) startY = Math.max(1, startY - 1);
 
-    // Restart game (arcade buttons only)
-    if (gameOver && (key === 'P1A' || key === 'START1')) {
-      restartGame(scene);
-      return;
+  map[startY][startX] = 0; // Carve starting cell
+  const stack = [[startX, startY]];
+  visited.add(`${startX},${startY}`);
+
+  while (stack.length > 0) {
+    const [currentX, currentY] = stack[stack.length - 1];
+    const neighbors = [];
+
+    // Find unvisited neighbors
+    for (const [dx, dy] of directions) {
+      const newX = currentX + dx;
+      const newY = currentY + dy;
+
+      if (
+        newX >= 1 &&
+        newX < MAP_SIZE - 1 &&
+        newY >= 1 &&
+        newY < MAP_SIZE - 1 &&
+        !visited.has(`${newX},${newY}`)
+      ) {
+        neighbors.push([newX, newY]);
+      }
     }
 
-    // Direction controls (keyboard keys get mapped to arcade codes)
-    if (key === 'P1U' && direction.y === 0) {
-      nextDirection = { x: 0, y: -1 };
-    } else if (key === 'P1D' && direction.y === 0) {
-      nextDirection = { x: 0, y: 1 };
-    } else if (key === 'P1L' && direction.x === 0) {
-      nextDirection = { x: -1, y: 0 };
-    } else if (key === 'P1R' && direction.x === 0) {
-      nextDirection = { x: 1, y: 0 };
+    if (neighbors.length > 0) {
+      // Choose random neighbor
+      const [nextX, nextY] =
+        neighbors[Math.floor(Math.random() * neighbors.length)];
+
+      // Carve path to neighbor
+      map[nextY][nextX] = 0;
+      map[currentY + (nextY - currentY) / 2][
+        currentX + (nextX - currentX) / 2
+      ] = 0;
+
+      visited.add(`${nextX},${nextY}`);
+      stack.push([nextX, nextY]);
+    } else {
+      stack.pop(); // Backtrack
+    }
+  }
+}
+
+// Eliminate dead ends by connecting them to other paths
+function eliminateDeadEnds() {
+  let changed = true;
+  const directions = [
+    [0, 1],
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+  ];
+
+  while (changed) {
+    changed = false;
+
+    for (let y = 1; y < MAP_SIZE - 1; y++) {
+      for (let x = 1; x < MAP_SIZE - 1; x++) {
+        if (map[y][x] === 0) {
+          // If it's an empty cell
+          // Count adjacent empty cells
+          let emptyNeighbors = 0;
+          const wallNeighbors = [];
+
+          for (const [dx, dy] of directions) {
+            const newX = x + dx;
+            const newY = y + dy;
+
+            if (newX >= 0 && newX < MAP_SIZE && newY >= 0 && newY < MAP_SIZE) {
+              if (map[newY][newX] === 0) {
+                emptyNeighbors++;
+              } else {
+                wallNeighbors.push([newX, newY]);
+              }
+            }
+          }
+
+          // If this is a dead end (only one connection)
+          if (emptyNeighbors === 1 && wallNeighbors.length > 0) {
+            // Try to connect to another path by removing a wall
+            const validWalls = wallNeighbors.filter(([wx, wy]) => {
+              // Check if removing this wall would connect to another path
+              let connectsToPath = false;
+              for (const [dx2, dy2] of directions) {
+                const checkX = wx + dx2;
+                const checkY = wy + dy2;
+                if (
+                  checkX >= 0 &&
+                  checkX < MAP_SIZE &&
+                  checkY >= 0 &&
+                  checkY < MAP_SIZE &&
+                  map[checkY][checkX] === 0 &&
+                  (checkX !== x || checkY !== y)
+                ) {
+                  connectsToPath = true;
+                  break;
+                }
+              }
+              return (
+                connectsToPath &&
+                wx > 0 &&
+                wx < MAP_SIZE - 1 &&
+                wy > 0 &&
+                wy < MAP_SIZE - 1
+              );
+            });
+
+            if (validWalls.length > 0) {
+              const [wallX, wallY] =
+                validWalls[Math.floor(Math.random() * validWalls.length)];
+              map[wallY][wallX] = 0;
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Add some random paths for variety while maintaining connectivity
+function addRandomPaths() {
+  const additionalPaths = Math.floor(MAP_SIZE * MAP_SIZE * 0.2); // 20% additional paths
+
+  for (let i = 0; i < additionalPaths; i++) {
+    const x = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+    const y = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+
+    // Only remove wall if it connects two empty areas
+    if (map[y][x] === 1) {
+      const directions = [
+        [0, 1],
+        [1, 0],
+        [0, -1],
+        [-1, 0],
+      ];
+      let adjacentEmpty = 0;
+
+      for (const [dx, dy] of directions) {
+        const newX = x + dx;
+        const newY = y + dy;
+        if (
+          newX >= 0 &&
+          newX < MAP_SIZE &&
+          newY >= 0 &&
+          newY < MAP_SIZE &&
+          map[newY][newX] === 0
+        ) {
+          adjacentEmpty++;
+        }
+      }
+
+      // Only remove wall if it connects exactly 2 empty areas (creates a loop)
+      if (adjacentEmpty >= 2) {
+        map[y][x] = 0;
+      }
+    }
+  }
+}
+
+// Players
+const players = [];
+class Player {
+  constructor(x, y, color) {
+    this.x = x;
+    this.y = y;
+    this.a = 0; // angle
+    this.color = color;
+    this.moveSpeed = 0.03;
+    this.rotSpeed = 0.02;
+  }
+}
+
+// Input handling
+const keys = {};
+
+function create() {
+  scene = this;
+  graphics = this.add.graphics();
+
+  // Generate initial maze
+  generateMaze();
+  initializePlayers();
+
+  // Input setup
+  this.input.keyboard.on("keydown", (e) => {
+    const key = KEYBOARD_TO_ARCADE[e.key] || e.key;
+    keys[key] = true;
+
+    if (currentState === "menu") {
+      if (key === "START1") {
+        numPlayers = 1;
+        startNewGame();
+      } else if (key === "START2") {
+        numPlayers = 2;
+        startNewGame();
+      }
+    } else if (currentState === "game") {
+      if (key === "START1" || key === "START2") {
+        currentState = "menu";
+      }
     }
   });
 
-  playTone(this, 440, 0.1);
+  this.input.keyboard.on("keyup", (e) => {
+    const key = KEYBOARD_TO_ARCADE[e.key] || e.key;
+    keys[key] = false;
+  });
 }
 
-function drawLetter(char, startX, startY, color, useBold = false) {
-  const pattern = useBold ? boldLetters[char] : letters[char];
-  if (!pattern) return startX + 30;
-
-  for (let row = 0; row < pattern.length; row++) {
-    for (let col = 0; col < pattern[row].length; col++) {
-      if (pattern[row][col]) {
-        const blockX = startX + col * snakeSize;
-        const blockY = startY + row * snakeSize;
-        titleBlocks.push({ x: blockX, y: blockY, color: color });
-      }
-    }
-  }
-  return startX + (pattern[0].length + 1) * snakeSize;
+function startNewGame() {
+  generateMaze();
+  initializePlayers();
+  currentState = "game";
 }
 
-function update(_time, delta) {
-  if (gameOver) return;
+function initializePlayers() {
+  // Clear existing players
+  players.length = 0;
 
-  moveTimer += delta;
-  if (moveTimer >= moveDelay) {
-    moveTimer = 0;
-    direction = nextDirection;
-    moveSnake(this);
+  // Find empty positions for players
+  const emptySpots = [];
+  for (let y = 1; y < MAP_SIZE - 1; y++) {
+    for (let x = 1; x < MAP_SIZE - 1; x++) {
+      if (map[y][x] === 0) emptySpots.push({ x: x + 0.5, y: y + 0.5 });
+    }
   }
 
-  drawGame();
+  // Initialize players at random positions
+  for (let i = 0; i < 2; i++) {
+    const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
+    const colors = [0x00ff00, 0xff0000];
+    players.push(new Player(spot.x, spot.y, colors[i]));
+    emptySpots.splice(emptySpots.indexOf(spot), 1);
+  }
 }
 
-function moveSnake(scene) {
-  const head = snake[0];
-  const newHead = {
-    x: head.x + direction.x * snakeSize,
-    y: head.y + direction.y * snakeSize
-  };
+function update() {
+  graphics.clear();
 
-  // Check wall collision
-  if (newHead.x < 0 || newHead.x >= 800 || newHead.y < 0 || newHead.y >= 600) {
-    endGame(scene);
-    return;
-  }
-
-  // Check self collision
-  for (let segment of snake) {
-    if (segment.x === newHead.x && segment.y === newHead.y) {
-      endGame(scene);
-      return;
-    }
-  }
-
-  // Check title block collision
-  for (let block of titleBlocks) {
-    if (newHead.x === block.x && newHead.y === block.y) {
-      endGame(scene);
-      return;
-    }
-  }
-
-  snake.unshift(newHead);
-
-  // Check food collision
-  if (newHead.x === food.x && newHead.y === food.y) {
-    score += 10;
-    scoreText.setText('Score: ' + score);
-    spawnFood();
-    playTone(scene, 880, 0.1);
-
-    if (moveDelay > 50) {  // Faster max speed (was 80ms)
-      moveDelay -= 2;
-    }
+  if (currentState === "menu") {
+    drawMenu();
   } else {
-    snake.pop();
+    handleInput();
+    drawGame();
   }
 }
 
-function spawnFood() {
-  let valid = false;
-  let attempts = 0;
+function drawMenu() {
+  graphics.fillStyle(0x222222);
+  graphics.fillRect(0, 0, 800, 600);
 
-  while (!valid && attempts < 100) {
-    attempts++;
-    const gridX = Math.floor(Math.random() * 53) * snakeSize;
-    const gridY = Math.floor(Math.random() * 40) * snakeSize;
+  // Clear any existing text objects
+  scene.children.getChildren().forEach((child) => {
+    if (child.type === "Text") {
+      child.destroy();
+    }
+  });
 
-    // Check not on snake
-    let onSnake = false;
-    for (let segment of snake) {
-      if (segment.x === gridX && segment.y === gridY) {
-        onSnake = true;
-        break;
+  // Title
+  scene.add
+    .text(400, 150, "DOOM MAZE", {
+      fontSize: "64px",
+      color: "#ff0000",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  // Options
+  scene.add
+    .text(400, 280, "Press P1 START: 1 Player", {
+      fontSize: "28px",
+      color: "#00ff00",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  scene.add
+    .text(400, 320, "Press P2 START: 2 Players", {
+      fontSize: "28px",
+      color: "#00ffff",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  scene.add
+    .text(400, 380, "In Game: START to return to menu", {
+      fontSize: "20px",
+      color: "#ffff00",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+
+  scene.add
+    .text(400, 450, "WASD/Arrows: Move & Turn", {
+      fontSize: "20px",
+      color: "#888888",
+      fontFamily: "Arial",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+}
+
+function handleInput() {
+  // Clear any text objects when in game mode
+  if (currentState === "game") {
+    scene.children.getChildren().forEach((child) => {
+      if (child.type === "Text") {
+        child.destroy();
+      }
+    });
+  }
+
+  for (let i = 0; i < numPlayers; i++) {
+    const p = players[i];
+    const prefix = i === 0 ? "P1" : "P2";
+
+    // Rotation
+    if (keys[prefix + "L"]) p.a -= p.rotSpeed;
+    if (keys[prefix + "R"]) p.a += p.rotSpeed;
+
+    // Movement
+    if (keys[prefix + "U"]) {
+      const newX = p.x + Math.cos(p.a) * p.moveSpeed;
+      const newY = p.y + Math.sin(p.a) * p.moveSpeed;
+      if (map[Math.floor(newY)][Math.floor(newX)] === 0) {
+        p.x = newX;
+        p.y = newY;
       }
     }
-
-    // Check not on title blocks
-    let onTitle = false;
-    for (let block of titleBlocks) {
-      if (gridX === block.x && gridY === block.y) {
-        onTitle = true;
-        break;
+    if (keys[prefix + "D"]) {
+      const newX = p.x - Math.cos(p.a) * p.moveSpeed;
+      const newY = p.y - Math.sin(p.a) * p.moveSpeed;
+      if (map[Math.floor(newY)][Math.floor(newX)] === 0) {
+        p.x = newX;
+        p.y = newY;
       }
-    }
-
-    if (!onSnake && !onTitle) {
-      food = { x: gridX, y: gridY };
-      valid = true;
     }
   }
 }
 
 function drawGame() {
-  graphics.clear();
+  if (numPlayers === 1) {
+    drawPlayer3D(players[0], 0, 0, 800, 600);
+  } else {
+    // Split screen
+    graphics.fillStyle(0x333333);
+    graphics.fillRect(398, 0, 4, 600); // Divider
+    drawPlayer3D(players[0], 0, 0, 398, 600);
+    drawPlayer3D(players[1], 402, 0, 398, 600);
+  }
+}
 
-  // Draw title blocks
-  titleBlocks.forEach(block => {
-    graphics.fillStyle(block.color, 1);
-    graphics.fillRect(block.x, block.y, snakeSize - 2, snakeSize - 2);
-  });
+function drawPlayer3D(player, offsetX, offsetY, width, height) {
+  const rays = 60; // Ray count for performance
+  const fov = Math.PI / 3; // 60 degrees
 
-  // Draw snake
-  snake.forEach((segment, index) => {
-    if (index === 0) {
-      graphics.fillStyle(0x00ff00, 1);
-    } else {
-      graphics.fillStyle(0x00aa00, 1);
+  for (let i = 0; i < rays; i++) {
+    const rayAngle = player.a - fov / 2 + (fov / rays) * i;
+    const dist = castRay(player.x, player.y, rayAngle, player);
+
+    // Calculate wall height based on distance
+    const wallHeight = Math.min((height * 0.8) / dist, height);
+    const wallTop = (height - wallHeight) / 2;
+
+    // Wall color based on distance (darker = further)
+    const shade = Math.max(50, 255 - dist * 30);
+    const color = (shade << 16) | (shade << 8) | shade;
+
+    graphics.fillStyle(color);
+    graphics.fillRect(
+      offsetX + (width / rays) * i,
+      offsetY + wallTop,
+      Math.ceil(width / rays) + 1,
+      wallHeight,
+    );
+  }
+
+  // Draw minimap in corner
+  drawMinimap(player, offsetX + 10, offsetY + 10);
+}
+
+function castRay(startX, startY, angle, player) {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  let x = startX,
+    y = startY;
+  let dist = 0;
+
+  while (dist < 20) {
+    // Max ray distance
+    x += dx * 0.01;
+    y += dy * 0.01;
+    dist += 0.01;
+
+    const mapX = Math.floor(x);
+    const mapY = Math.floor(y);
+
+    if (
+      mapX < 0 ||
+      mapX >= MAP_SIZE ||
+      mapY < 0 ||
+      mapY >= MAP_SIZE ||
+      map[mapY][mapX] === 1
+    ) {
+      break;
     }
-    graphics.fillRect(segment.x, segment.y, snakeSize - 2, snakeSize - 2);
-  });
+  }
 
-  // Draw food
-  graphics.fillStyle(0xff0000, 1);
-  graphics.fillRect(food.x, food.y, snakeSize - 2, snakeSize - 2);
+  return dist * Math.cos(angle - player.a); // Fix fisheye using the correct player's angle
 }
 
-function endGame(scene) {
-  gameOver = true;
-  playTone(scene, 220, 0.5);
+function drawMinimap(player, x, y) {
+  const size = 80;
+  const scale = size / MAP_SIZE;
 
-  // Semi-transparent overlay
-  const overlay = scene.add.graphics();
-  overlay.fillStyle(0x000000, 0.7);
-  overlay.fillRect(0, 0, 800, 600);
+  // Background
+  graphics.fillStyle(0x111111);
+  graphics.fillRect(x, y, size, size);
 
-  // Game Over title with glow effect
-  const gameOverText = scene.add.text(400, 300, 'GAME OVER', {
-    fontSize: '64px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#ff0000',
-    align: 'center',
-    stroke: '#ff6666',
-    strokeThickness: 8
-  }).setOrigin(0.5);
+  // Map
+  for (let my = 0; my < MAP_SIZE; my++) {
+    for (let mx = 0; mx < MAP_SIZE; mx++) {
+      if (map[my][mx] === 1) {
+        graphics.fillStyle(0x666666);
+        graphics.fillRect(x + mx * scale, y + my * scale, scale, scale);
+      }
+    }
+  }
 
-  // Pulsing animation for game over text
-  scene.tweens.add({
-    targets: gameOverText,
-    scale: { from: 1, to: 1.1 },
-    alpha: { from: 1, to: 0.8 },
-    duration: 800,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut'
-  });
+  // Player
+  graphics.fillStyle(player.color);
+  graphics.fillRect(x + player.x * scale - 1, y + player.y * scale - 1, 3, 3);
 
-  // Score display
-  scene.add.text(400, 400, 'SCORE: ' + score, {
-    fontSize: '36px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#00ffff',
-    align: 'center',
-    stroke: '#000000',
-    strokeThickness: 4
-  }).setOrigin(0.5);
-
-  // Restart instruction with subtle animation
-  const restartText = scene.add.text(400, 480, 'Press Button A or START to Restart', {
-    fontSize: '24px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#ffff00',
-    align: 'center',
-    stroke: '#000000',
-    strokeThickness: 3
-  }).setOrigin(0.5);
-
-  // Blinking animation for restart text
-  scene.tweens.add({
-    targets: restartText,
-    alpha: { from: 1, to: 0.3 },
-    duration: 600,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut'
-  });
-}
-
-function restartGame(scene) {
-  snake = [
-    { x: 75, y: 60 },
-    { x: 60, y: 60 },
-    { x: 45, y: 60 }
-  ];
-  direction = { x: 1, y: 0 };
-  nextDirection = { x: 1, y: 0 };
-  score = 0;
-  gameOver = false;
-  moveDelay = 100;  // Match new faster initial speed
-  scoreText.setText('Score: 0');
-  spawnFood();
-  scene.scene.restart();
-}
-
-function playTone(scene, frequency, duration) {
-  const audioContext = scene.sound.context;
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-
-  oscillator.frequency.value = frequency;
-  oscillator.type = 'square';
-
-  gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-
-  oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + duration);
+  // Direction line
+  graphics.lineStyle(1, player.color);
+  graphics.beginPath();
+  graphics.moveTo(x + player.x * scale, y + player.y * scale);
+  graphics.lineTo(
+    x + player.x * scale + Math.cos(player.a) * 10,
+    y + player.y * scale + Math.sin(player.a) * 10,
+  );
+  graphics.strokePath();
 }
