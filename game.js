@@ -475,7 +475,7 @@ function eliminateDeadEnds() {
 
 // Add some random paths for variety while maintaining connectivity
 function addRandomPaths() {
-  const additionalPaths = Math.floor(MAP_SIZE * MAP_SIZE * 0.99); // 20% additional paths
+  const additionalPaths = Math.floor(MAP_SIZE * MAP_SIZE * 0.6); // 60% additional paths
 
   for (let i = 0; i < additionalPaths; i++) {
     const x = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
@@ -963,7 +963,7 @@ function drawMenu() {
     .text(400, 150, "DOOM MAZE", {
       fontSize: "64px",
       color: "#ff0000",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -973,7 +973,7 @@ function drawMenu() {
     .text(400, 280, "Press P1 START: 1 Player", {
       fontSize: "28px",
       color: "#00ff00",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -982,7 +982,7 @@ function drawMenu() {
     .text(400, 320, "Press P2 START: 2 Players", {
       fontSize: "28px",
       color: "#00ffff",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -991,7 +991,7 @@ function drawMenu() {
     .text(400, 380, "In Game: START to return to menu", {
       fontSize: "20px",
       color: "#ffff00",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1000,7 +1000,7 @@ function drawMenu() {
     .text(400, 430, "WASD/Arrows: Move & Turn", {
       fontSize: "20px",
       color: "#888888",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1009,7 +1009,7 @@ function drawMenu() {
     .text(400, 460, "Hold I/T + Left/Right: Strafe", {
       fontSize: "20px",
       color: "#88ff88",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1019,7 +1019,7 @@ function drawMenu() {
     .text(400, 490, "P1 'U' / P2 'R': Shoot", {
       fontSize: "20px",
       color: "#ff8888",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1042,7 +1042,7 @@ function drawSpriteSelection() {
     .text(400, 100, "SELECT YOUR SPRITES", {
       fontSize: "48px",
       color: "#ff0000",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1052,7 +1052,7 @@ function drawSpriteSelection() {
     .text(200, 200, "PLAYER 1", {
       fontSize: "32px",
       color: "#00ff00",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1068,7 +1068,7 @@ function drawSpriteSelection() {
     .text(200, 250, p1SpriteText, {
       fontSize: "24px",
       color: "#ffffff",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1077,7 +1077,7 @@ function drawSpriteSelection() {
     .text(200, 300, "Press U/I/O to change", {
       fontSize: "18px",
       color: "#888888",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1087,7 +1087,7 @@ function drawSpriteSelection() {
     .text(600, 200, "PLAYER 2", {
       fontSize: "32px",
       color: "#00ffff",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1103,7 +1103,7 @@ function drawSpriteSelection() {
     .text(600, 250, p2SpriteText, {
       fontSize: "24px",
       color: "#ffffff",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1112,7 +1112,7 @@ function drawSpriteSelection() {
     .text(600, 300, "Press R/T/Y to change", {
       fontSize: "18px",
       color: "#888888",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1122,7 +1122,7 @@ function drawSpriteSelection() {
     .text(400, 450, "Press START to begin!", {
       fontSize: "24px",
       color: "#ffff00",
-      fontFamily: "Arial",
+      fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
@@ -1770,18 +1770,11 @@ function drawGame() {
     })
     .setOrigin(0.5);
 
-  // *** NEW *** Draw player scores
+  // *** NEW *** Draw player scores in bottom left corner (pixel art style)
   for (let i = 0; i < players.length; i++) {
     const player = players[i];
-    const xPos = numPlayers === 1 ? 100 : i === 0 ? 100 : 700;
-
-    scene.add
-      .text(xPos, 50, `P${i + 1}: ${player.score}`, {
-        fontSize: "18px",
-        color: "#00ff00",
-        fontFamily: "monospace",
-      })
-      .setOrigin(0.5);
+    const yPos = 550 - i * 40; // Stack scores vertically with more spacing
+    drawPixelScoreDisplay(20, yPos, player.score);
   }
 
   // *** NEW *** Draw floating point texts
@@ -2651,7 +2644,8 @@ function drawPixelHealthDisplay(x, y, healthValue) {
   const digitY = y + 20;
 
   // Convert health value to digits
-  const digits = healthValue.toString().padStart(3, "0").split("");
+  const digitsLength = healthValue >= 100 ? 3 : healthValue >= 10 ? 2 : 1;
+  const digits = healthValue.toString().padStart(digitsLength, "0").split("");
 
   for (let i = 0; i < digits.length; i++) {
     drawPixelDigit(x + i * 16, digitY, parseInt(digits[i]), healthColor, scale);
@@ -2760,12 +2754,73 @@ function drawPixelDigit(x, y, digit, color, scale) {
   const pattern = digitPatterns[digit];
   if (!pattern) return;
 
-  graphics.fillStyle(color);
   for (let py = 0; py < pattern.length; py++) {
     for (let px = 0; px < pattern[py].length; px++) {
       if (pattern[py][px] === 1) {
+        graphics.fillStyle(color);
         graphics.fillRect(x + px * scale, y + py * scale, scale, scale);
       }
     }
+  }
+}
+
+// *** NEW *** Pixel art style score display
+function drawPixelScoreDisplay(x, y, scoreValue) {
+  const scale = 3;
+
+  // Draw "SCORE" text in pixel art style
+  const scoreText = [
+    [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0],
+    [1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0],
+    [0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0],
+    [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1],
+  ];
+
+  // Draw "SCORE" label
+  const scoreStartX = x;
+  for (let py = 0; py < scoreText.length; py++) {
+    for (let px = 0; px < scoreText[py].length; px++) {
+      if (scoreText[py][px] === 1) {
+        graphics.fillStyle(0xffffff);
+        graphics.fillRect(
+          scoreStartX + px * scale,
+          y + py * scale,
+          scale,
+          scale,
+        );
+      }
+    }
+  }
+
+  // Draw score value in pixel art
+  const digitY = y + 20;
+
+  // Convert score to string and pad if needed
+  const scoreStr = Math.abs(scoreValue).toString();
+  const isNegative = scoreValue < 0;
+
+  // Draw negative sign if needed
+  let digitX = x;
+  if (isNegative) {
+    // Draw minus sign
+    graphics.fillStyle(0xff0000);
+    graphics.fillRect(digitX, digitY + 4, 6, 2);
+    digitX += 8;
+  }
+
+  // Determine score color based on value
+  const scoreColor =
+    scoreValue < 0 ? 0xff0000 : scoreValue > 0 ? 0x00ff00 : 0xffffff;
+
+  // Draw each digit
+  for (let i = 0; i < scoreStr.length; i++) {
+    drawPixelDigit(
+      digitX + i * 12,
+      digitY,
+      parseInt(scoreStr[i]),
+      scoreColor,
+      scale,
+    );
   }
 }
