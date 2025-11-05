@@ -185,43 +185,61 @@ const DOGE_SPRITES = {
   ],
 };
 
-// Skull sprite (10x10 pixel art) - smaller within grid
+// Skull sprite (16x16 pixel art) - smaller within grid
 const SKULL_SPRITES = {
   idle: [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
-    [0, 1, 2, 3, 4, 3, 4, 2, 1, 0],
-    [0, 1, 2, 3, 3, 3, 3, 2, 1, 0],
-    [0, 1, 2, 2, 2, 2, 2, 2, 1, 0],
-    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
-    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
-    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
-    [0, 0, 1, 6, 6, 6, 6, 1, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0],
+    [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+    [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+    [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
+    [1, 2, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [0, 1, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 1, 0],
+    [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+    [0, 0, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 1, 0, 0, 0],
+    [0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0],
+    [0, 0, 0, 1, 2, 2, 1, 2, 2, 1, 2, 2, 1, 0, 0, 0],
+    [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
   ],
   walk1: [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
-    [0, 1, 2, 3, 4, 3, 4, 2, 1, 0],
-    [0, 1, 2, 3, 3, 3, 3, 2, 1, 0],
-    [0, 1, 2, 2, 2, 2, 2, 2, 1, 0],
-    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
-    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
-    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
-    [0, 1, 1, 6, 6, 6, 6, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0],
+    [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+    [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+    [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
+    [1, 2, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [0, 1, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 1, 0],
+    [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+    [0, 0, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 1, 0, 0, 0],
+    [0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0],
+    [0, 0, 0, 1, 2, 2, 1, 2, 2, 1, 2, 2, 1, 0, 0, 0],
+    [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
   ],
   walk2: [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
-    [0, 1, 2, 3, 4, 3, 4, 2, 1, 0],
-    [0, 1, 2, 3, 3, 3, 3, 2, 1, 0],
-    [0, 1, 2, 2, 2, 2, 2, 2, 1, 0],
-    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
-    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
-    [0, 1, 2, 5, 2, 2, 5, 2, 1, 0],
-    [0, 0, 0, 6, 6, 6, 6, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0],
+    [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+    [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+    [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
+    [1, 2, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1],
+    [0, 1, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 1, 0],
+    [0, 0, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 1, 0, 0],
+    [0, 0, 1, 1, 2, 2, 2, 1, 1, 2, 2, 2, 1, 0, 0, 0],
+    [0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0],
+    [0, 0, 0, 1, 2, 2, 1, 2, 2, 1, 2, 2, 1, 0, 0, 0],
+    [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
   ],
 };
 
@@ -290,12 +308,10 @@ const BUFF_COLORS = {
 
 // Skull colors
 const SKULL_COLORS = {
-  1: 0x2c2c2c, // Dark gray outline
+  0: 0x000000, // Transparent
+  1: 0x000000, // Black outline
   2: 0xf0f0f0, // Main bone white
-  3: 0x000000, // Black eye sockets
-  4: 0x800000, // Dark red eye glow
-  5: 0x000000, // Black teeth/mouth
-  6: 0x400000, // Dark red jaw
+  3: 0x400000, // Dark red
 };
 
 // Pepe colors
@@ -903,7 +919,7 @@ function initializeMonsters() {
   }
 
   // Spawn 5 monsters randomly
-  const numMonsters = 0;
+  const numMonsters = 5;
   for (let i = 0; i < numMonsters && emptySpots.length > 0; i++) {
     const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
     monsters.push(new Monster(spot.x, spot.y));
@@ -2642,11 +2658,16 @@ function drawPlayerSpriteWithOcclusion(
     }
   }
 
-  const pixelWidth = width / 10; // All sprites are 10x10
-  const pixelHeight = height / 10;
+  const spriteHeight = sprite.length;
+  if (spriteHeight === 0) return; // Safety check
+  const spriteWidth = sprite[0].length;
+  if (spriteWidth === 0) return; // Safety check
 
-  for (let sy = 0; sy < 10; sy++) {
-    for (let sx = 0; sx < 10; sx++) {
+  const pixelWidth = width / spriteWidth;
+  const pixelHeight = height / spriteHeight;
+
+  for (let sy = 0; sy < spriteHeight; sy++) {
+    for (let sx = 0; sx < spriteWidth; sx++) {
       const colorIndex = sprite[sy][sx];
       if (colorIndex === 0) continue; // Transparent pixel
 
@@ -2788,11 +2809,16 @@ function drawMonsterSpriteWithOcclusion(
     }
   }
 
-  const pixelWidth = width / 10;
-  const pixelHeight = height / 10;
+  const spriteHeight = sprite.length;
+  if (spriteHeight === 0) return; // Safety check
+  const spriteWidth = sprite[0].length;
+  if (spriteWidth === 0) return; // Safety check
 
-  for (let sy = 0; sy < 10; sy++) {
-    for (let sx = 0; sx < 10; sx++) {
+  const pixelWidth = width / spriteWidth;
+  const pixelHeight = height / spriteHeight;
+
+  for (let sy = 0; sy < spriteHeight; sy++) {
+    for (let sx = 0; sx < spriteWidth; sx++) {
       const colorIndex = sprite[sy][sx];
       if (colorIndex === 0) continue;
 
@@ -2816,13 +2842,6 @@ function drawMonsterSpriteWithOcclusion(
       }
     }
   }
-}
-
-// *** DEPRECATED *** Keep for compatibility but redirect to new function
-function drawAmongUsSprite(x, y, width, height, playerId, animFrame) {
-  const sprite = AMONGUS_SPRITES[animFrame];
-  const colors = PLAYER_COLORS[playerId];
-  drawSprite(sprite, colors, x, y, width, height);
 }
 
 function drawMinimap(player, x, y) {
