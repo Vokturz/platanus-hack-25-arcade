@@ -112,79 +112,6 @@ const AMONGUS_SPRITES = {
   ],
 };
 
-const PEPE_SPRITES = {
-  idle: [
-    [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
-    [0, 1, 2, 2, 2, 2, 2, 1, 0, 0],
-    [1, 2, 3, 3, 3, 3, 3, 2, 1, 0],
-    [1, 2, 3, 4, 4, 4, 3, 3, 2, 1],
-    [1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
-    [1, 2, 2, 5, 5, 5, 5, 2, 2, 1],
-    [1, 2, 2, 6, 6, 6, 6, 2, 2, 1],
-    [0, 1, 2, 6, 6, 6, 6, 2, 1, 0],
-    [0, 0, 1, 2, 2, 2, 2, 1, 0, 0],
-    [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
-  ],
-  walk1: [
-    [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
-    [0, 1, 2, 2, 2, 2, 2, 1, 0, 0],
-    [1, 2, 3, 3, 3, 3, 3, 2, 1, 0],
-    [1, 2, 3, 4, 4, 4, 3, 3, 2, 1],
-    [1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
-    [1, 2, 2, 5, 5, 5, 5, 2, 2, 1],
-    [1, 2, 2, 6, 6, 6, 6, 2, 2, 1],
-    [0, 1, 2, 6, 6, 6, 6, 2, 1, 0],
-    [0, 1, 1, 0, 0, 0, 0, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ],
-  walk2: [
-    [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
-    [0, 1, 2, 2, 2, 2, 2, 1, 0, 0],
-    [1, 2, 3, 3, 3, 3, 3, 2, 1, 0],
-    [1, 2, 3, 4, 4, 4, 3, 3, 2, 1],
-    [1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
-    [1, 2, 2, 5, 5, 5, 5, 2, 2, 1],
-    [1, 2, 2, 6, 6, 6, 6, 2, 2, 1],
-    [0, 1, 2, 6, 6, 6, 6, 2, 1, 0],
-    [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ],
-};
-
-const DOGE_SPRITES = {
-  idle: [
-    [0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
-    [1, 2, 2, 1, 0, 1, 2, 2, 1, 0],
-    [1, 2, 3, 3, 2, 3, 3, 2, 1, 0],
-    [1, 2, 3, 4, 3, 4, 3, 2, 1, 0],
-    [1, 2, 2, 4, 4, 4, 2, 2, 1, 0],
-    [1, 2, 2, 5, 5, 5, 2, 2, 1, 0],
-    [1, 2, 2, 5, 6, 6, 5, 2, 2, 1],
-    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
-    [0, 0, 1, 2, 2, 2, 2, 1, 0, 0],
-    [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
-  ],
-  walk1: [
-    [0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
-    [1, 2, 2, 1, 0, 1, 2, 2, 1, 0],
-    [1, 2, 3, 3, 2, 3, 3, 2, 1, 0],
-    [1, 2, 3, 4, 3, 4, 3, 2, 1, 0],
-    [1, 2, 2, 4, 4, 4, 2, 2, 1, 0],
-    [1, 2, 2, 5, 5, 5, 2, 2, 1, 1],
-    [1, 2, 2, 5, 6, 6, 5, 2, 2, 1],
-    [0, 1, 2, 5, 5, 5, 5, 2, 1, 0],
-    [0, 1, 1, 0, 0, 0, 0, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ],
-  walk2: [
-    [0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
-    [1, 2, 2, 1, 0, 1, 2, 2, 1, 0],
-    [1, 2, 3, 3, 2, 3, 3, 2, 1, 0],
-    [1, 2, 3, 4, 3, 4, 3, 2, 1, 0],
-    [1, 2, 2, 4, 4, 4, 2, 2, 1, 0],
-  ],
-};
-
 // Skull sprite (16x16 pixel art) - smaller within grid
 const SKULL_SPRITES = {
   idle: [
@@ -809,27 +736,11 @@ function create() {
     if (currentState === "menu") {
       if (key === "START1") {
         numPlayers = 1;
-        selectedSprites = [SPRITE_TYPES.AMONGUS, SPRITE_TYPES.AMONGUS]; // Default for single player
+        selectedSprites = [SPRITE_TYPES.AMONGUS, SPRITE_TYPES.AMONGUS]; // Always use Among Us
         startNewGame();
       } else if (key === "START2") {
         numPlayers = 2;
-        currentState = "spriteSelect";
-        selectedSprites = [SPRITE_TYPES.AMONGUS, SPRITE_TYPES.AMONGUS]; // Reset selections
-      }
-    } else if (currentState === "spriteSelect") {
-      // Handle sprite selection for 2-player mode
-      if (key === "P1A" || key === "P1B" || key === "P1C") {
-        // Player 1 sprite cycling
-        const sprites = Object.values(SPRITE_TYPES);
-        const currentIndex = sprites.indexOf(selectedSprites[0]);
-        selectedSprites[0] = sprites[(currentIndex + 1) % sprites.length];
-      } else if (key === "P2A" || key === "P2B" || key === "P2C") {
-        // Player 2 sprite cycling
-        const sprites = Object.values(SPRITE_TYPES);
-        const currentIndex = sprites.indexOf(selectedSprites[1]);
-        selectedSprites[1] = sprites[(currentIndex + 1) % sprites.length];
-      } else if (key === "START1" || key === "START2") {
-        // Start game with selected sprites
+        selectedSprites = [SPRITE_TYPES.AMONGUS, SPRITE_TYPES.AMONGUS]; // Always use Among Us
         startNewGame();
       }
     } else if (currentState === "game") {
@@ -1026,8 +937,6 @@ function update() {
 
   if (currentState === "menu") {
     drawMenu();
-  } else if (currentState === "spriteSelect") {
-    drawSpriteSelection();
   } else if (currentState === "gameOver") {
     drawGameOver();
   } else {
@@ -1117,7 +1026,7 @@ function drawMenu() {
 
   // Title
   scene.add
-    .text(400, 150, "DOOM MAZE", {
+    .text(400, 150, "BANANA MAYHEM", {
       fontSize: "64px",
       color: "#ff0000",
       fontFamily: "monospace",
@@ -1182,149 +1091,7 @@ function drawMenu() {
     .setDepth(1);
 }
 
-// Draw sprite selection screen
-function drawSpriteSelection() {
-  graphics.fillStyle(0x222222);
-  graphics.fillRect(0, 0, 800, 600);
-
-  // Clear any existing text objects
-  scene.children.getChildren().forEach((child) => {
-    if (child.type === "Text") {
-      child.destroy();
-    }
-  });
-
-  // Title
-  scene.add
-    .text(400, 100, "SELECT YOUR SPRITES", {
-      fontSize: "48px",
-      color: "#ff0000",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
-  // Player 1 selection
-  scene.add
-    .text(200, 200, "PLAYER 1", {
-      fontSize: "32px",
-      color: "#00ff00",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
-  const p1SpriteText =
-    selectedSprites[0] === SPRITE_TYPES.AMONGUS
-      ? "AMONG US"
-      : selectedSprites[0] === SPRITE_TYPES.PEPE
-        ? "PEPE"
-        : "DOGE";
-
-  scene.add
-    .text(200, 250, p1SpriteText, {
-      fontSize: "24px",
-      color: "#ffffff",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
-  scene.add
-    .text(200, 300, "Press U/I/O to change", {
-      fontSize: "18px",
-      color: "#888888",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
-  // Player 2 selection
-  scene.add
-    .text(600, 200, "PLAYER 2", {
-      fontSize: "32px",
-      color: "#00ffff",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
-  const p2SpriteText =
-    selectedSprites[1] === SPRITE_TYPES.AMONGUS
-      ? "AMONG US"
-      : selectedSprites[1] === SPRITE_TYPES.PEPE
-        ? "PEPE"
-        : "DOGE";
-
-  scene.add
-    .text(600, 250, p2SpriteText, {
-      fontSize: "24px",
-      color: "#ffffff",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
-  scene.add
-    .text(600, 300, "Press R/T/Y to change", {
-      fontSize: "18px",
-      color: "#888888",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
-  // Start game instruction
-  scene.add
-    .text(400, 450, "Press START to begin!", {
-      fontSize: "24px",
-      color: "#ffff00",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
-  // Draw sprite previews
-  drawSpritePreview(selectedSprites[0], 150, 350);
-  drawSpritePreview(selectedSprites[1], 550, 350);
-}
-
-// Draw sprite preview
-function drawSpritePreview(spriteType, x, y) {
-  const scale = 3;
-  const size = 10 * scale;
-
-  let sprite, colors;
-  if (spriteType === SPRITE_TYPES.AMONGUS) {
-    sprite = AMONGUS_SPRITES.idle;
-    colors = PLAYER_COLORS[0]; // Use player 1 colors for preview
-  } else if (spriteType === SPRITE_TYPES.PEPE) {
-    sprite = PEPE_SPRITES.idle;
-    colors = PEPE_COLORS;
-  } else if (spriteType === SPRITE_TYPES.DOGE) {
-    sprite = DOGE_SPRITES.idle;
-    colors = DOGE_COLORS;
-  }
-
-  // Draw the sprite
-  for (let py = 0; py < sprite.length; py++) {
-    for (let px = 0; px < sprite[py].length; px++) {
-      const colorIndex = sprite[py][px];
-      if (colorIndex > 0) {
-        const color = colors[colorIndex];
-        if (color !== undefined) {
-          graphics.fillStyle(color);
-          graphics.fillRect(
-            x - size / 2 + px * scale,
-            y - size / 2 + py * scale,
-            scale,
-            scale,
-          );
-        }
-      }
-    }
-  }
-}
+// Sprite selection removed - game always uses Among Us sprites
 
 // Draw game over screen
 function drawGameOver() {
@@ -2704,20 +2471,9 @@ function drawPlayerSpriteWithOcclusion(
 ) {
   let sprite, colors;
 
-  if (player.spriteType === SPRITE_TYPES.AMONGUS) {
-    sprite = AMONGUS_SPRITES[animFrame];
-    colors = PLAYER_COLORS[player.playerId];
-  } else if (player.spriteType === SPRITE_TYPES.PEPE) {
-    sprite = PEPE_SPRITES[animFrame];
-    colors = PEPE_COLORS;
-  } else if (player.spriteType === SPRITE_TYPES.DOGE) {
-    sprite = DOGE_SPRITES[animFrame];
-    colors = DOGE_COLORS;
-  } else {
-    // Default to Among Us if sprite type is unknown
-    sprite = AMONGUS_SPRITES[animFrame];
-    colors = PLAYER_COLORS[player.playerId];
-  }
+  // Always use Among Us sprites
+  sprite = AMONGUS_SPRITES[animFrame];
+  colors = PLAYER_COLORS[player.playerId];
 
   // Apply damage flash effect to colors
   if (player.hitFlashTimer > 0) {
@@ -2812,20 +2568,9 @@ function drawBulletSpriteWithOcclusion(
 function drawPlayerSprite(x, y, width, height, player, animFrame) {
   let sprite, colors;
 
-  if (player.spriteType === SPRITE_TYPES.AMONGUS) {
-    sprite = AMONGUS_SPRITES[animFrame];
-    colors = PLAYER_COLORS[player.playerId];
-  } else if (player.spriteType === SPRITE_TYPES.PEPE) {
-    sprite = PEPE_SPRITES[animFrame];
-    colors = PEPE_COLORS;
-  } else if (player.spriteType === SPRITE_TYPES.DOGE) {
-    sprite = DOGE_SPRITES[animFrame];
-    colors = DOGE_COLORS;
-  } else {
-    // Default to Among Us if sprite type is unknown
-    sprite = AMONGUS_SPRITES[animFrame];
-    colors = PLAYER_COLORS[player.playerId];
-  }
+  // Always use Among Us sprites
+  sprite = AMONGUS_SPRITES[animFrame];
+  colors = PLAYER_COLORS[player.playerId];
 
   // Apply damage flash effect to colors
   if (player.hitFlashTimer > 0) {
