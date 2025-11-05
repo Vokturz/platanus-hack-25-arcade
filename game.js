@@ -244,6 +244,50 @@ const BANANA_SPRITE = [
   [0, 0, 0, 0, 0, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
+const HEALTH_CROSS_SPRITE = [
+  [0, 0, 0, 1, 1, 0, 0, 0],
+  [0, 0, 0, 1, 1, 0, 0, 0],
+  [0, 0, 0, 1, 1, 0, 0, 0],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [0, 0, 0, 1, 1, 0, 0, 0],
+  [0, 0, 0, 1, 1, 0, 0, 0],
+  [0, 0, 0, 1, 1, 0, 0, 0],
+];
+
+const DAMAGE_BANANAS_SPRITE = [
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 2, 2, 0, 0],
+  [0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 2, 0, 0],
+  [0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 2, 0, 0],
+  [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 2, 2, 0],
+  [0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 2, 2, 0],
+  [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 2, 2, 0],
+  [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 2, 0, 0],
+  [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 2, 0, 0],
+  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+];
+
+// *** NEW *** Buff colors
+const BUFF_COLORS = {
+  // Health cross colors
+  HEALTH: {
+    0: 0x000000, // Transparent
+    1: 0x00ff00, // Bright green cross
+  },
+  // Damage banana bunch colors
+  DAMAGE: {
+    0: 0x000000, // Transparent
+    1: 0xffd700, // Golden yellow banana
+    2: 0xffa500, // Orange highlight
+  },
+};
+
 // Skull colors
 const SKULL_COLORS = {
   1: 0x2c2c2c, // Dark gray outline
@@ -475,7 +519,7 @@ function eliminateDeadEnds() {
 
 // Add some random paths for variety while maintaining connectivity
 function addRandomPaths() {
-  const additionalPaths = Math.floor(MAP_SIZE * MAP_SIZE * 0.6); // 60% additional paths
+  const additionalPaths = Math.floor(MAP_SIZE * MAP_SIZE * 0.99); // 60% additional paths
 
   for (let i = 0; i < additionalPaths; i++) {
     const x = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
@@ -533,6 +577,17 @@ const GAME_DURATION = 120 * 60; // 2 minutes at 60fps (120 seconds * 60 fps)
 const RESPAWN_DELAY = 3 * 60; // 3 seconds at 60fps
 const WALL_COLLISION_BUFFER = 0.1; // Buffer zone around player for wall collision
 
+// *** NEW *** Buff system constants
+const BUFF_TYPES = {
+  HEALTH: "health",
+  DAMAGE: "damage",
+};
+
+const BUFF_PICKUP_TIME = 0.2 * 60; // seconds at 60fps
+const BUFF_RESPAWN_TIME = 1200; // 20 seconds at 60fps
+const HEALTH_BUFF_AMOUNT = 100;
+const DAMAGE_BUFF_MULTIPLIER = 2;
+
 // Players
 const players = [];
 
@@ -548,6 +603,10 @@ let winner = null;
 
 // Floating point text system
 let floatingTexts = [];
+
+// *** NEW *** Buff system variables
+let buffs = [];
+let nextBuffSpawn = 0;
 
 class Monster {
   constructor(x, y) {
@@ -607,6 +666,9 @@ class Player {
     this.score = 0;
     this.respawnTimer = 0; // Timer for respawn delay
     this.isDead = false; // Flag to track if player is dead and waiting to respawn
+    // *** NEW *** Damage buff system
+    this.damageMultiplier = 1;
+    this.damageBuffTimer = 0;
   }
 }
 
@@ -620,10 +682,14 @@ class Bullet {
     this.ownerId = ownerId;
     this.speed = 0.1;
     this.lifetime = 100; // Frames before it disappears
+    // *** NEW *** Get damage from owner's multiplier
+    const owner = players.find((p) => p.playerId === ownerId);
+    this.damage = BULLET_DAMAGE * (owner ? owner.damageMultiplier : 1);
   }
 }
 
 // Floating text class for point notifications
+// *** NEW *** Floating text class for point notifications
 class FloatingText {
   constructor(x, y, text, color = "#ffff00") {
     this.x = x;
@@ -638,6 +704,73 @@ class FloatingText {
     this.y += this.velocityY;
     this.lifetime--;
     return this.lifetime > 0;
+  }
+}
+
+// *** NEW *** Buff class
+class Buff {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    this.type = type;
+    this.animTimer = 0;
+    this.floatOffset = 0;
+    this.playersNearby = new Map(); // Track how long each player has been nearby
+  }
+
+  update() {
+    this.animTimer++;
+    this.floatOffset = Math.sin(this.animTimer * 0.1) * 0.1; // Floating animation
+
+    // Check for players nearby
+    for (const player of players) {
+      if (player.isDead) continue;
+
+      const dx = player.x - this.x;
+      const dy = player.y - this.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < 0.5) {
+        // Player is nearby
+        if (!this.playersNearby.has(player.playerId)) {
+          this.playersNearby.set(player.playerId, 0);
+        }
+        this.playersNearby.set(
+          player.playerId,
+          this.playersNearby.get(player.playerId) + 1,
+        );
+
+        // Check if player has been nearby long enough
+        if (this.playersNearby.get(player.playerId) >= BUFF_PICKUP_TIME) {
+          this.applyBuff(player);
+          return true; // Buff consumed
+        }
+      } else {
+        // Player moved away, reset their timer
+        this.playersNearby.delete(player.playerId);
+      }
+    }
+
+    return false; // Buff not consumed
+  }
+
+  applyBuff(player) {
+    if (this.type === BUFF_TYPES.HEALTH) {
+      player.health = Math.min(
+        player.maxHealth,
+        player.health + HEALTH_BUFF_AMOUNT,
+      );
+      createFloatingText(
+        player.x * 50,
+        player.y * 50,
+        `+${HEALTH_BUFF_AMOUNT} HP`,
+        "#00ff00",
+      );
+    } else if (this.type === BUFF_TYPES.DAMAGE) {
+      player.damageMultiplier = DAMAGE_BUFF_MULTIPLIER;
+      player.damageBuffTimer = 30 * 60; // 30 seconds
+      createFloatingText(player.x * 50, player.y * 50, "DAMAGE x2!", "#ffaa00");
+    }
   }
 }
 
@@ -703,25 +836,32 @@ function create() {
 function startNewGame() {
   generateMaze();
   initializePlayers();
-  initializeMonsters(); // Initialize monsters
-  bullets = []; // Clear bullets on new game
-  deadMonsters = []; // Clear dead monsters on new game
+  initializeMonsters(); // *** NEW *** Initialize monsters
+  bullets = []; // *** NEW *** Clear bullets on new game
+  deadMonsters = []; // *** NEW *** Clear dead monsters on new game
 
-  // Reset game timer and state
+  // *** NEW *** Reset game timer and state
   gameTimer = GAME_DURATION;
   gameStartTime = Date.now();
   gameEnded = false;
   winner = null;
 
-  // Reset all player scores and states
+  // *** NEW *** Reset all player scores and states
   for (const player of players) {
     player.score = 0;
     player.isDead = false;
     player.respawnTimer = 0;
+    // *** NEW *** Reset damage multiplier
+    player.damageMultiplier = 1;
+    player.damageBuffTimer = 0;
   }
 
-  // Clear floating texts
+  // *** NEW *** Clear floating texts
   floatingTexts = [];
+
+  // *** NEW *** Initialize buff system
+  buffs = [];
+  nextBuffSpawn = Date.now() + 5000; // First buff spawns after 5 seconds
 
   currentState = "game";
 }
@@ -883,8 +1023,9 @@ function update() {
       }
     }
 
-    updatePlayerRespawns(); // Update player respawn timers
-    updateFloatingTexts(); // Update floating point texts
+    updatePlayerRespawns(); // *** NEW *** Update player respawn timers
+    updateFloatingTexts(); // *** NEW *** Update floating point texts
+    updateBuffs(); // *** NEW *** Update buff system
     handleInput();
     updateBullets(); // Update bullet logic
     updateMonsters(); // Update monster AI
@@ -1256,6 +1397,7 @@ function drawGameOver() {
 }
 
 // Update player visual effects timers
+// *** NEW *** Update player visual effects timers
 function updatePlayerEffects() {
   for (const player of players) {
     // Update hit flash timer
@@ -1267,6 +1409,50 @@ function updatePlayerEffects() {
     if (player.damageScreenTimer > 0) {
       player.damageScreenTimer--;
     }
+
+    // *** NEW *** Update damage buff timer
+    if (player.damageBuffTimer > 0) {
+      player.damageBuffTimer--;
+      if (player.damageBuffTimer === 0) {
+        player.damageMultiplier = 1; // Reset to normal damage
+      }
+    }
+  }
+}
+
+// *** NEW *** Update buff system
+function updateBuffs() {
+  // Update existing buffs
+  for (let i = buffs.length - 1; i >= 0; i--) {
+    if (buffs[i].update()) {
+      // Buff was consumed
+      buffs.splice(i, 1);
+      nextBuffSpawn = Date.now() + BUFF_RESPAWN_TIME * (1000 / 60); // 20 seconds
+    }
+  }
+
+  // Spawn new buff if it's time
+  if (buffs.length === 0 && Date.now() >= nextBuffSpawn) {
+    spawnRandomBuff();
+  }
+}
+
+// *** NEW *** Spawn a random buff at a random location
+function spawnRandomBuff() {
+  const emptySpots = [];
+  for (let y = 1; y < MAP_SIZE - 1; y++) {
+    for (let x = 1; x < MAP_SIZE - 1; x++) {
+      if (map[y][x] === 0) {
+        emptySpots.push({ x: x + 0.5, y: y + 0.5 });
+      }
+    }
+  }
+
+  if (emptySpots.length > 0) {
+    const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
+    const buffType =
+      Math.random() < 0.5 ? BUFF_TYPES.HEALTH : BUFF_TYPES.DAMAGE;
+    buffs.push(new Buff(spot.x, spot.y, buffType));
   }
 }
 
@@ -1498,7 +1684,7 @@ function updateBullets() {
 
       if (dist < playerRadius) {
         // Hit!
-        p.health -= BULLET_DAMAGE;
+        p.health -= b.damage; // Use bullet's damage (includes multiplier)
         bullets.splice(i, 1); // Remove bullet
 
         // Add visual damage effects
@@ -1546,12 +1732,12 @@ function updateBullets() {
 
       if (dist < monsterRadius) {
         // Hit monster!
-        monster.health -= BULLET_DAMAGE;
+        monster.health -= b.damage; // Use bullet's damage (includes multiplier)
         monster.hitFlashTimer = 15; // Flash for 15 frames
         bullets.splice(i, 1); // Remove bullet
 
         if (monster.health <= 0) {
-          // Award points to shooter for killing monster
+          // *** NEW *** Award points to shooter for killing monster
           const shooter = players.find(
             (player) => player.playerId === b.ownerId,
           );
@@ -1838,7 +2024,7 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
   for (let i = 0; i < rays; i++) {
     const rayAngle = player.a - fov / 2 + (fov / rays) * i;
     const ray = castRay(player.x, player.y, rayAngle, player); // [NEW]
-    wallDistances[i] = ray.distance; // [NEW] Store the true distance for occlusion
+    wallDistances[i] = ray.projectedDistance;
 
     // Calculate wall height based on the *projected* distance
     const wallHeight = Math.min((height * 0.8) / ray.projectedDistance, height); // [NEW]
@@ -1866,6 +2052,9 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
 
   // Draw bullets as sprites with occlusion
   drawBulletSprites(player, offsetX, offsetY, width, height, wallDistances);
+
+  // *** NEW *** Draw buff sprites with occlusion
+  drawBuffSprites(player, offsetX, offsetY, width, height, wallDistances);
 
   // Draw the weapon
   // This is drawn on top of the 3D world, but before the 2D UI overlays
@@ -2756,6 +2945,138 @@ function drawPixelHealthDisplay(x, y, healthValue) {
           digitY + py * scale,
           scale,
           scale,
+        );
+      }
+    }
+  }
+}
+
+// *** NEW *** Draw buff sprites with occlusion
+function drawBuffSprites(
+  player,
+  offsetX,
+  offsetY,
+  width,
+  height,
+  wallDistances,
+) {
+  if (buffs.length === 0) return;
+
+  const fov = Math.PI / 3;
+  const rays = wallDistances.length;
+
+  // Sort buffs by distance (farther first)
+  const buffsWithDistance = buffs.map((buff) => {
+    const dx = buff.x - player.x;
+    const dy = buff.y - player.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return { buff, distance };
+  });
+
+  buffsWithDistance.sort((a, b) => b.distance - a.distance);
+
+  for (const { buff, distance } of buffsWithDistance) {
+    const dx = buff.x - player.x;
+    const dy = buff.y - player.y;
+
+    if (distance > 10) continue; // Too far away
+
+    // Add floating animation
+    const floatY = buff.y + buff.floatOffset;
+
+    // Calculate angle to buff
+    const angleToBuff = Math.atan2(dy, dx);
+    let relativeAngle = angleToBuff - player.a;
+
+    // Normalize angle
+    while (relativeAngle > Math.PI) relativeAngle -= 2 * Math.PI;
+    while (relativeAngle < -Math.PI) relativeAngle += 2 * Math.PI;
+
+    // Check if buff is in field of view
+    if (Math.abs(relativeAngle) > fov / 2) continue;
+
+    // Project to screen space
+    const projectedDistance = distance * Math.cos(relativeAngle);
+    const screenX = (relativeAngle / (fov / 2)) * (width / 2) + width / 2;
+
+    // Calculate sprite size (buffs are small)
+    const spriteHeight = Math.max(20, 240 / projectedDistance);
+    const spriteWidth = spriteHeight;
+
+    // Position on ground
+    const baseWallHeight = Math.min((height * 0.8) / projectedDistance, height);
+    const wallBottom = height / 2 + baseWallHeight / 2;
+    const groundY = Math.min(wallBottom, height);
+    const spriteY = groundY - spriteHeight + buff.floatOffset * 20; // Add float animation
+
+    // Get sprite data
+    const spriteData =
+      buff.type === BUFF_TYPES.HEALTH
+        ? HEALTH_CROSS_SPRITE
+        : DAMAGE_BANANAS_SPRITE;
+    const colors = BUFF_COLORS[buff.type.toUpperCase()];
+
+    // Draw with occlusion
+    drawSpriteWithOcclusion(
+      spriteData,
+      colors,
+      offsetX + screenX - spriteWidth / 2,
+      offsetY + spriteY,
+      spriteWidth,
+      spriteHeight,
+      projectedDistance,
+      wallDistances,
+      offsetX,
+      width,
+      rays,
+    );
+  }
+}
+
+// *** NEW *** Generic sprite drawing with occlusion for buffs
+function drawSpriteWithOcclusion(
+  spriteData,
+  colors,
+  x,
+  y,
+  width,
+  height,
+  distance,
+  wallDistances,
+  offsetX,
+  screenWidth,
+  rays,
+) {
+  const spriteHeight = spriteData.length;
+  if (spriteHeight === 0) return;
+  const spriteWidth = spriteData[0].length;
+  if (spriteWidth === 0) return;
+
+  const pixelWidth = width / spriteWidth;
+  const pixelHeight = height / spriteHeight;
+
+  for (let sy = 0; sy < spriteHeight; sy++) {
+    for (let sx = 0; sx < spriteWidth; sx++) {
+      const colorIndex = spriteData[sy][sx];
+      if (colorIndex === 0) continue; // Transparent
+
+      const pixelScreenX = x + sx * pixelWidth;
+      const pixelRelativeX = pixelScreenX - offsetX;
+      const rayIndex = Math.floor((pixelRelativeX / screenWidth) * rays);
+
+      if (rayIndex < 0 || rayIndex >= wallDistances.length) continue;
+
+      const wallDistanceAtPixel = wallDistances[rayIndex];
+      if (distance >= wallDistanceAtPixel) continue; // Behind wall
+
+      const color = colors[colorIndex];
+      if (color !== undefined) {
+        graphics.fillStyle(color);
+        graphics.fillRect(
+          pixelScreenX,
+          y + sy * pixelHeight,
+          Math.ceil(pixelWidth),
+          Math.ceil(pixelHeight),
         );
       }
     }
