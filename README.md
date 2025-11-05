@@ -6,6 +6,32 @@ At [Platanus Hack 25](https://hack.platan.us) we will have an arcade machine. Wh
 
 ---
 
+## 🍌 Banana Mayhem
+
+![Banana Mayhem Cover](cover.png)
+
+**Banana Mayhem** is a retro-style 2.5D maze shooter that combines the best of classic Doom gameplay with modern indie aesthetics. Navigate through procedurally generated mazes using raycasting graphics while battling hordes of demonic banana monsters!
+
+### 🎮 Game Features
+- **First-person 2.5D perspective** using raycasting technology
+- **Procedurally generated mazes** for endless replayability
+- **Single-player and split-screen co-op** for up to 2 players
+- **Among Us-style characters** wielding powerful banana guns
+- **Dynamic kill streak system** with bonus rewards
+- **Power-up system** with health and damage buffs
+- **Adaptive soundtrack** that responds to gameplay intensity
+- **Retro pixel art graphics** with authentic arcade feel
+
+### 🕹️ Controls
+- **Movement**: WASD (P1) / Arrow Keys (P2)
+- **Shooting**: U (P1) / R (P2)
+- **Strafe Mode**: Hold I (P1) / T (P2) + Left/Right to strafe
+- **Start Game**: 1 (Single Player) / 2 (Two Player)
+
+Experience the thrill of classic FPS gaming with a fruity twist - survive the banana apocalypse and become the ultimate monster slayer!
+
+---
+
 ## 🏆 Prizes
 
 **🥇 First Place:**
@@ -138,9 +164,9 @@ Your AI agent already knows:
 Simply tell your AI assistant what game you want to build! For example:
 
 > "Create a Space Invaders clone with colorful enemies"
-> 
+>
 > "Build a flappy bird style game with procedural graphics"
-> 
+>
 > "Make a breakout game with power-ups"
 
 Your AI will handle the implementation, keeping everything within the restrictions automatically!
