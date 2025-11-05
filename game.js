@@ -54,7 +54,7 @@ const game = new Phaser.Game(config);
 
 // Create cover image as base64 PNG
 const coverImageData = "";
-// *** NEW *** Sprite types available for selection
+// Sprite types available for selection
 const SPRITE_TYPES = {
   AMONGUS: "amongus",
   PEPE: "pepe",
@@ -185,7 +185,7 @@ const DOGE_SPRITES = {
   ],
 };
 
-// *** NEW *** Skull sprite (10x10 pixel art) - smaller within grid
+// Skull sprite (10x10 pixel art) - smaller within grid
 const SKULL_SPRITES = {
   idle: [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -225,7 +225,7 @@ const SKULL_SPRITES = {
   ],
 };
 
-// *** NEW *** Banana sprite (approx 20x15)
+// Banana sprite (approx 20x15)
 const BANANA_SPRITE = [
   [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -244,7 +244,7 @@ const BANANA_SPRITE = [
   [0, 0, 0, 0, 0, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
-// *** NEW *** Skull colors
+// Skull colors
 const SKULL_COLORS = {
   1: 0x2c2c2c, // Dark gray outline
   2: 0xf0f0f0, // Main bone white
@@ -254,7 +254,7 @@ const SKULL_COLORS = {
   6: 0x400000, // Dark red jaw
 };
 
-// *** NEW *** Pepe colors
+// Pepe colors
 const PEPE_COLORS = {
   1: 0x0d5016, // Dark green outline
   2: 0x4caf50, // Main green body
@@ -264,7 +264,7 @@ const PEPE_COLORS = {
   6: 0xff5722, // Red mouth
 };
 
-// *** NEW *** Doge colors
+// Doge colors
 const DOGE_COLORS = {
   1: 0x8b4513, // Brown outline
   2: 0xdaa520, // Golden main body
@@ -274,7 +274,7 @@ const DOGE_COLORS = {
   6: 0xff69b4, // Pink tongue
 };
 
-// *** NEW *** Banana colors
+// Banana colors
 const BANANA_COLORS = {
   1: 0x4a2d0b, // Dark brown outline
   2: 0xffe135, // Main yellow
@@ -513,7 +513,7 @@ function addRandomPaths() {
   }
 }
 
-// *** NEW *** Game constants
+// Game constants
 const PLAYER_MAX_HEALTH = 100;
 const BULLET_DAMAGE = 25;
 const MONSTER_DAMAGE = 10;
@@ -523,30 +523,30 @@ const MONSTER_ATTACK_RANGE = 1.0;
 const MONSTER_SPEED = 0.015;
 const MONSTER_CHASE_SPEED = 0.02;
 
-// *** NEW *** Points system constants
+// Points system constants
 const POINTS_MONSTER_KILL = 5;
 const POINTS_PLAYER_KILL = 20;
 const POINTS_DEATH_PENALTY = -10;
 
-// *** NEW *** Game timer constants
+// Game timer constants
 const GAME_DURATION = 120 * 60; // 2 minutes at 60fps (120 seconds * 60 fps)
 const RESPAWN_DELAY = 3 * 60; // 3 seconds at 60fps
-const WALL_COLLISION_BUFFER = 0.05; // Buffer zone around player for wall collision
+const WALL_COLLISION_BUFFER = 0.2; // Buffer zone around player for wall collision
 
 // Players
 const players = [];
 
-// *** NEW *** Monsters
+// Monsters
 let monsters = [];
 let deadMonsters = []; // Track dead monsters for respawning
 
-// *** NEW *** Game state variables
+// Game state variables
 let gameTimer = GAME_DURATION;
 let gameStartTime = 0;
 let gameEnded = false;
 let winner = null;
 
-// *** NEW *** Floating point text system
+// Floating point text system
 let floatingTexts = [];
 
 class Monster {
@@ -584,7 +584,7 @@ class Player {
     this.a = 0; // angle
     this.color = color;
     this.playerId = playerId;
-    this.spriteType = spriteType; // *** NEW *** Store selected sprite type
+    this.spriteType = spriteType; // Store selected sprite type
     this.moveSpeed = 0.03;
     this.rotSpeed = 0.02;
     this.isMoving = false;
@@ -592,25 +592,25 @@ class Player {
     this.animTimer = 0;
     this.lastX = x;
     this.lastY = y;
-    // *** NEW *** Health and shooting properties
+    // Health and shooting properties
     this.health = PLAYER_MAX_HEALTH;
     this.maxHealth = PLAYER_MAX_HEALTH;
     this.shootCooldown = 0;
     this.shootDelay = 30; // 30 frames cooldown (0.5 seconds at 60fps)
-    // *** NEW *** Weapon animation properties
+    // Weapon animation properties
     this.weaponBobTimer = 0;
     this.weaponFireTimer = 0; // Countdown for fire animation
-    // *** NEW *** Damage visual effects
+    // Damage visual effects
     this.hitFlashTimer = 0; // Timer for hit flash effect
     this.damageScreenTimer = 0; // Timer for screen damage effect
-    // *** NEW *** Points and respawn system
+    // Points and respawn system
     this.score = 0;
     this.respawnTimer = 0; // Timer for respawn delay
     this.isDead = false; // Flag to track if player is dead and waiting to respawn
   }
 }
 
-// *** NEW *** Bullet class
+// Bullet class
 let bullets = [];
 class Bullet {
   constructor(x, y, angle, ownerId) {
@@ -623,7 +623,7 @@ class Bullet {
   }
 }
 
-// *** NEW *** Floating text class for point notifications
+// Floating text class for point notifications
 class FloatingText {
   constructor(x, y, text, color = "#ffff00") {
     this.x = x;
@@ -703,24 +703,24 @@ function create() {
 function startNewGame() {
   generateMaze();
   initializePlayers();
-  initializeMonsters(); // *** NEW *** Initialize monsters
-  bullets = []; // *** NEW *** Clear bullets on new game
-  deadMonsters = []; // *** NEW *** Clear dead monsters on new game
+  initializeMonsters(); // Initialize monsters
+  bullets = []; // Clear bullets on new game
+  deadMonsters = []; // Clear dead monsters on new game
 
-  // *** NEW *** Reset game timer and state
+  // Reset game timer and state
   gameTimer = GAME_DURATION;
   gameStartTime = Date.now();
   gameEnded = false;
   winner = null;
 
-  // *** NEW *** Reset all player scores and states
+  // Reset all player scores and states
   for (const player of players) {
     player.score = 0;
     player.isDead = false;
     player.respawnTimer = 0;
   }
 
-  // *** NEW *** Clear floating texts
+  // Clear floating texts
   floatingTexts = [];
 
   currentState = "game";
@@ -741,7 +741,7 @@ function initializePlayers() {
   // Initialize only active players based on numPlayers
   for (let i = 0; i < numPlayers; i++) {
     const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
-    // *** MODIFIED *** Using player colors from the palette
+    // Using player colors from the palette
     const playerColor = i === 0 ? PLAYER_COLORS[0][2] : PLAYER_COLORS[1][2];
     players.push(
       new Player(spot.x, spot.y, playerColor, i, selectedSprites[i]),
@@ -750,7 +750,7 @@ function initializePlayers() {
   }
 }
 
-// *** NEW *** Initialize monsters in the maze
+// Initialize monsters in the maze
 function initializeMonsters() {
   monsters = [];
 
@@ -771,7 +771,7 @@ function initializeMonsters() {
   }
 }
 
-// *** NEW *** Respawn a monster far from players
+// Respawn a monster far from players
 function respawnMonster() {
   // Find empty positions far from players
   const emptySpots = [];
@@ -821,7 +821,7 @@ function respawnMonster() {
   }
 }
 
-// *** NEW *** Respawn player function
+// Respawn player function
 function respawnPlayer(player) {
   const emptySpots = [];
   for (let y = 1; y < MAP_SIZE - 1; y++) {
@@ -857,10 +857,10 @@ function respawnPlayer(player) {
 
   player.health = player.maxHealth;
   player.a = Math.random() * Math.PI * 2; // Random angle
-  // *** NEW *** Reset damage visual effects
+  // Reset damage visual effects
   player.hitFlashTimer = 0;
   player.damageScreenTimer = 0;
-  // *** NEW *** Reset respawn state
+  // Reset respawn state
   player.isDead = false;
   player.respawnTimer = 0;
 }
@@ -875,7 +875,7 @@ function update() {
   } else if (currentState === "gameOver") {
     drawGameOver();
   } else {
-    // *** NEW *** Update game timer
+    // Update game timer
     if (!gameEnded) {
       gameTimer--;
       if (gameTimer <= 0) {
@@ -883,18 +883,18 @@ function update() {
       }
     }
 
-    updatePlayerRespawns(); // *** NEW *** Update player respawn timers
-    updateFloatingTexts(); // *** NEW *** Update floating point texts
+    updatePlayerRespawns(); // Update player respawn timers
+    updateFloatingTexts(); // Update floating point texts
     handleInput();
-    updateBullets(); // *** NEW *** Update bullet logic
-    updateMonsters(); // *** NEW *** Update monster AI
-    updateMonsterRespawns(); // *** NEW *** Update monster respawns
-    updatePlayerEffects(); // *** NEW *** Update player visual effects
+    updateBullets(); // Update bullet logic
+    updateMonsters(); // Update monster AI
+    updateMonsterRespawns(); // Update monster respawns
+    updatePlayerEffects(); // Update player visual effects
     drawGame();
   }
 }
 
-// *** NEW *** End game and determine winner
+// End game and determine winner
 function endGame() {
   gameEnded = true;
   currentState = "gameOver";
@@ -920,12 +920,12 @@ function endGame() {
   }
 }
 
-// *** NEW *** Create floating text notification
+// Create floating text notification
 function createFloatingText(x, y, text, color) {
   floatingTexts.push(new FloatingText(x, y, text, color));
 }
 
-// *** NEW *** Update floating texts
+// Update floating texts
 function updateFloatingTexts() {
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     if (!floatingTexts[i].update()) {
@@ -934,7 +934,7 @@ function updateFloatingTexts() {
   }
 }
 
-// *** NEW *** Update player respawn timers
+// Update player respawn timers
 function updatePlayerRespawns() {
   for (const player of players) {
     if (player.isDead && player.respawnTimer > 0) {
@@ -1014,7 +1014,7 @@ function drawMenu() {
     .setOrigin(0.5)
     .setDepth(1);
 
-  // *** NEW *** Added shoot controls info
+  // Added shoot controls info
   scene.add
     .text(400, 490, "P1 'U' / P2 'R': Shoot", {
       fontSize: "20px",
@@ -1025,7 +1025,7 @@ function drawMenu() {
     .setDepth(1);
 }
 
-// *** NEW *** Draw sprite selection screen
+// Draw sprite selection screen
 function drawSpriteSelection() {
   graphics.fillStyle(0x222222);
   graphics.fillRect(0, 0, 800, 600);
@@ -1132,7 +1132,7 @@ function drawSpriteSelection() {
   drawSpritePreview(selectedSprites[1], 550, 350);
 }
 
-// *** NEW *** Draw sprite preview
+// Draw sprite preview
 function drawSpritePreview(spriteType, x, y) {
   const scale = 3;
   const size = 10 * scale;
@@ -1169,7 +1169,7 @@ function drawSpritePreview(spriteType, x, y) {
   }
 }
 
-// *** NEW *** Draw game over screen
+// Draw game over screen
 function drawGameOver() {
   graphics.fillStyle(0x000000, 1);
   graphics.fillRect(0, 0, 800, 600);
@@ -1255,7 +1255,7 @@ function drawGameOver() {
     .setOrigin(0.5);
 }
 
-// *** NEW *** Update player visual effects timers
+// Update player visual effects timers
 function updatePlayerEffects() {
   for (const player of players) {
     // Update hit flash timer
@@ -1270,7 +1270,7 @@ function updatePlayerEffects() {
   }
 }
 
-// *** NEW *** Update monster AI and behavior
+// Update monster AI and behavior
 function updateMonsters() {
   for (const monster of monsters) {
     // Update animation
@@ -1295,7 +1295,7 @@ function updateMonsters() {
     let nearestDistance = Infinity;
 
     for (const player of players) {
-      // *** NEW *** Skip dead players
+      // Skip dead players
       if (player.isDead) continue;
 
       const dx = player.x - monster.x;
@@ -1325,7 +1325,7 @@ function updateMonsters() {
             monster.attackCooldown = MONSTER_ATTACK_COOLDOWN;
 
             if (nearestPlayer.health <= 0) {
-              // *** NEW *** Deduct points for death by monster
+              // Deduct points for death by monster
               nearestPlayer.score += POINTS_DEATH_PENALTY;
               createFloatingText(
                 nearestPlayer.x * 50,
@@ -1334,7 +1334,7 @@ function updateMonsters() {
                 "#ff0000",
               );
 
-              // *** NEW *** Reset health and start respawn timer
+              // Reset health and start respawn timer
               nearestPlayer.health = 0;
               nearestPlayer.isDead = true;
               nearestPlayer.respawnTimer = RESPAWN_DELAY;
@@ -1446,7 +1446,7 @@ function updateMonsters() {
   }
 }
 
-// *** NEW *** Update monster respawn system
+// Update monster respawn system
 function updateMonsterRespawns() {
   const currentTime = Date.now();
 
@@ -1461,7 +1461,7 @@ function updateMonsterRespawns() {
   }
 }
 
-// *** NEW *** Update bullet physics and collisions
+// Update bullet physics and collisions
 function updateBullets() {
   // Iterate backwards to safely remove items from array
   for (let i = bullets.length - 1; i >= 0; i--) {
@@ -1501,12 +1501,12 @@ function updateBullets() {
         p.health -= BULLET_DAMAGE;
         bullets.splice(i, 1); // Remove bullet
 
-        // *** NEW *** Add visual damage effects
+        // Add visual damage effects
         p.hitFlashTimer = 20; // Flash for 20 frames
         p.damageScreenTimer = 15; // Screen effect for 15 frames
 
         if (p.health <= 0) {
-          // *** NEW *** Award points to shooter and deduct from victim
+          // Award points to shooter and deduct from victim
           const shooter = players.find(
             (player) => player.playerId === b.ownerId,
           );
@@ -1527,7 +1527,7 @@ function updateBullets() {
             "#ff0000",
           );
 
-          // *** NEW *** Reset health and start respawn timer
+          // Reset health and start respawn timer
           p.health = 0;
           p.isDead = true;
           p.respawnTimer = RESPAWN_DELAY;
@@ -1536,7 +1536,7 @@ function updateBullets() {
       }
     }
 
-    // *** NEW *** Check bullet vs monster collisions
+    // Check bullet vs monster collisions
     for (let j = 0; j < monsters.length; j++) {
       const monster = monsters[j];
       const dx = b.x - monster.x;
@@ -1551,7 +1551,7 @@ function updateBullets() {
         bullets.splice(i, 1); // Remove bullet
 
         if (monster.health <= 0) {
-          // *** NEW *** Award points to shooter for killing monster
+          // Award points to shooter for killing monster
           const shooter = players.find(
             (player) => player.playerId === b.ownerId,
           );
@@ -1589,16 +1589,16 @@ function handleInput() {
     const p = players[i];
     const prefix = i === 0 ? "P1" : "P2";
 
-    // *** NEW *** Skip input handling for dead players
+    // Skip input handling for dead players
     if (p.isDead) {
       continue;
     }
 
-    // *** NEW *** Update cooldown
+    // Update cooldown
     if (p.shootCooldown > 0) {
       p.shootCooldown--;
     }
-    // *** NEW *** Update weapon fire timer
+    // Update weapon fire timer
     if (p.weaponFireTimer > 0) {
       p.weaponFireTimer--;
     }
@@ -1667,12 +1667,12 @@ function handleInput() {
       }
     }
 
-    // *** NEW *** Shooting
+    // Shooting
     if (keys[prefix + "A"] && p.shootCooldown <= 0) {
       // Fire a bullet from player's position in their current direction
       bullets.push(new Bullet(p.x, p.y, p.a, p.playerId));
       p.shootCooldown = p.shootDelay;
-      // *** NEW *** Trigger fire animation
+      // Trigger fire animation
       p.weaponFireTimer = 10; // 10 frames of animation
     }
 
@@ -1684,7 +1684,7 @@ function handleInput() {
         p.animFrame = (p.animFrame + 1) % 2; // Cycle between walk1 and walk2
         p.animTimer = 0;
       }
-      // *** NEW *** Update weapon bob
+      // Update weapon bob
       p.weaponBobTimer += 0.2; // Adjust speed as needed
     } else {
       p.animFrame = 0; // Reset to idle
@@ -1693,7 +1693,7 @@ function handleInput() {
   }
 }
 
-// *** NEW *** Check wall collision with buffer zone around player
+// Check wall collision with buffer zone around player
 function isWallCollision(x, y, buffer = WALL_COLLISION_BUFFER) {
   // Check multiple points around the player position
   const checkPoints = [
@@ -1756,7 +1756,7 @@ function drawGame() {
     drawPlayer3D(players[1], 402, 0, 398, 600);
   }
 
-  // *** NEW *** Draw game timer
+  // Draw game timer
   const timeRemaining = Math.max(0, gameTimer);
   const minutes = Math.floor(timeRemaining / 3600);
   const seconds = Math.floor((timeRemaining % 3600) / 60);
@@ -1770,14 +1770,14 @@ function drawGame() {
     })
     .setOrigin(0.5);
 
-  // *** NEW *** Draw player scores in bottom left corner (pixel art style)
+  // Draw player scores in bottom left corner (pixel art style)
   for (let i = 0; i < players.length; i++) {
     const player = players[i];
     const yPos = 550 - i * 40; // Stack scores vertically with more spacing
     drawPixelScoreDisplay(20, yPos, player.score);
   }
 
-  // *** NEW *** Draw floating point texts
+  // Draw floating point texts
   for (const floatingText of floatingTexts) {
     const alpha = floatingText.lifetime / 120; // Fade out over time
     scene.add
@@ -1792,7 +1792,7 @@ function drawGame() {
 }
 
 function drawPlayer3D(player, offsetX, offsetY, width, height) {
-  // *** NEW *** If player is dead, show black screen with respawn message
+  // If player is dead, show black screen with respawn message
   if (player.isDead) {
     graphics.fillStyle(0x000000, 1);
     graphics.fillRect(offsetX, offsetY, width, height);
@@ -1829,43 +1829,44 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
   // Draw walls
   for (let i = 0; i < rays; i++) {
     const rayAngle = player.a - fov / 2 + (fov / rays) * i;
-    const dist = castRay(player.x, player.y, rayAngle, player);
-    wallDistances[i] = dist;
+    const ray = castRay(player.x, player.y, rayAngle, player); // [NEW]
+    wallDistances[i] = ray.distance; // [NEW] Store the true distance for occlusion
 
-    // Calculate wall height based on distance
-    const wallHeight = Math.min((height * 0.8) / dist, height);
+    // Calculate wall height based on the *projected* distance
+    const wallHeight = Math.min((height * 0.8) / ray.projectedDistance, height); // [NEW]
     const wallTop = (height - wallHeight) / 2;
 
-    // Wall color based on distance (darker = further)
-    const shade = Math.max(50, 255 - dist * 30);
-    const color = (shade << 16) | (shade << 8) | shade;
-
-    graphics.fillStyle(color);
-    graphics.fillRect(
+    // Draw textured wall column
+    drawWallColumn(
+      // [NEW]
       offsetX + (width / rays) * i,
       offsetY + wallTop,
       Math.ceil(width / rays) + 1,
       wallHeight,
+      ray, // [NEW] Pass the entire ray object
+      offsetX, // [NEW] Pass view offsets
+      offsetY, // [NEW] Pass view offsets
+      height, // [NEW] Pass view height
     );
   }
 
   // Draw other players as sprites with occlusion
   drawPlayerSprites(player, offsetX, offsetY, width, height, wallDistances);
 
-  // *** NEW *** Draw monsters as sprites with occlusion
+  // Draw monsters as sprites with occlusion
   drawMonsterSprites(player, offsetX, offsetY, width, height, wallDistances);
 
-  // *** NEW *** Draw bullets as sprites with occlusion
+  // Draw bullets as sprites with occlusion
   drawBulletSprites(player, offsetX, offsetY, width, height, wallDistances);
 
-  // *** NEW *** Draw the weapon
+  // Draw the weapon
   // This is drawn on top of the 3D world, but before the 2D UI overlays
   drawWeapon(player, offsetX, offsetY, width, height);
 
   // Draw minimap in corner
   drawMinimap(player, offsetX + 10, offsetY + 10);
 
-  // *** NEW *** Draw Health Percentage (Pixel Art Doom style)
+  // Draw Health Percentage (Pixel Art Doom style)
   const healthValue = Math.max(0, Math.floor(player.health));
   drawPixelHealthDisplay(
     offsetX + width - 80,
@@ -1873,7 +1874,7 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
     healthValue,
   );
 
-  // *** NEW *** Draw damage screen effect
+  // Draw damage screen effect
   if (player.damageScreenTimer > 0) {
     const intensity = player.damageScreenTimer / 15; // Fade out over 15 frames
 
@@ -1924,21 +1925,64 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
 }
 
 function castRay(startX, startY, angle, player) {
-  const dx = Math.cos(angle);
-  const dy = Math.sin(angle);
-  let x = startX,
-    y = startY;
+  // Use player's angle for fisheye correction
+  const playerAngle = player.a;
+
+  // Ray direction
+  const rayDirX = Math.cos(angle);
+  const rayDirY = Math.sin(angle);
+
+  // Current map cell
+  let mapX = Math.floor(startX);
+  let mapY = Math.floor(startY);
+
+  // Length of ray from current position to next x or y-side
+  let sideDistX;
+  let sideDistY;
+
+  // Length of ray from one x or y-side to next x or y-side
+  // (deltaDistX = 1 / abs(rayDirX))
+  const deltaDistX = rayDirX === 0 ? Infinity : Math.abs(1 / rayDirX);
+  const deltaDistY = rayDirY === 0 ? Infinity : Math.abs(1 / rayDirY);
+
+  // Direction to step (1 or -1)
+  let stepX;
+  let stepY;
+
+  let side; // 0 for N/S wall (Y-hit), 1 for E/W wall (X-hit)
+
+  // Calculate initial step and sideDist
+  if (rayDirX < 0) {
+    stepX = -1;
+    sideDistX = (startX - mapX) * deltaDistX;
+  } else {
+    stepX = 1;
+    sideDistX = (mapX + 1.0 - startX) * deltaDistX;
+  }
+
+  if (rayDirY < 0) {
+    stepY = -1;
+    sideDistY = (startY - mapY) * deltaDistY;
+  } else {
+    stepY = 1;
+    sideDistY = (mapY + 1.0 - startY) * deltaDistY;
+  }
+
   let dist = 0;
-
+  // Perform DDA
   while (dist < 20) {
-    // Max ray distance
-    x += dx * 0.01;
-    y += dy * 0.01;
-    dist += 0.01;
+    // Jump to next map square, OR in x-dir, OR in y-dir
+    if (sideDistX < sideDistY) {
+      sideDistX += deltaDistX;
+      mapX += stepX;
+      side = 1; // Hit E/W wall
+    } else {
+      sideDistY += deltaDistY;
+      mapY += stepY;
+      side = 0; // Hit N/S wall
+    }
 
-    const mapX = Math.floor(x);
-    const mapY = Math.floor(y);
-
+    // Check if ray has hit a wall
     if (
       mapX < 0 ||
       mapX >= MAP_SIZE ||
@@ -1950,7 +1994,39 @@ function castRay(startX, startY, angle, player) {
     }
   }
 
-  return dist * Math.cos(angle - player.a); // Fix fisheye using the correct player's angle
+  // Calculate distance projected on camera direction (fisheye correction)
+  // This is the distance used for wall height
+  let projectedDistance;
+  if (side === 1) {
+    // E/W wall
+    projectedDistance = (mapX - startX + (1 - stepX) / 2) / rayDirX;
+  } else {
+    // N/S wall
+    projectedDistance = (mapY - startY + (1 - stepY) / 2) / rayDirY;
+  }
+
+  // Calculate the *exact* hit position on the wall (0.0 to 1.0)
+  // This is our stable horizontal texture coordinate
+  let wallX;
+  if (side === 1) {
+    // E/W wall
+    wallX = startY + projectedDistance * rayDirY;
+  } else {
+    // N/S wall
+    wallX = startX + projectedDistance * rayDirX;
+  }
+  wallX -= Math.floor(wallX);
+
+  // Fix for fisheye correction on the *distance*
+  const trueDistance = projectedDistance * Math.cos(angle - playerAngle);
+
+  // Return all the data the drawing function will need
+  return {
+    distance: trueDistance, // The true distance
+    projectedDistance: projectedDistance, // The distance for height calculation
+    side: side, // 0 for N/S, 1 for E/W
+    wallX: wallX, // The horizontal texture coordinate (0.0 to 1.0)
+  };
 }
 
 function drawPlayerSprites(
@@ -1964,14 +2040,24 @@ function drawPlayerSprites(
   const fov = Math.PI / 3; // 60 degrees
   const rays = 60; // Should match the ray count in drawPlayer3D
 
+  // Create array of other players with distances for depth sorting
+  const playersWithDistance = [];
   for (let i = 0; i < players.length; i++) {
     const otherPlayer = players[i];
     if (otherPlayer === viewerPlayer) continue; // Don't draw self
 
-    // Calculate relative position
     const dx = otherPlayer.x - viewerPlayer.x;
     const dy = otherPlayer.y - viewerPlayer.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
+    playersWithDistance.push({ player: otherPlayer, distance });
+  }
+
+  // Sort by distance (farther players first for proper depth)
+  playersWithDistance.sort((a, b) => b.distance - a.distance);
+
+  for (const { player: otherPlayer, distance } of playersWithDistance) {
+    const dx = otherPlayer.x - viewerPlayer.x;
+    const dy = otherPlayer.y - viewerPlayer.y;
 
     if (distance > 15) {
       continue; // Too far to see clearly
@@ -2045,7 +2131,7 @@ function drawPlayerSprites(
   }
 }
 
-// *** NEW *** Draw monster sprites in 3D view
+// Draw monster sprites in 3D view
 function drawMonsterSprites(
   player,
   offsetX,
@@ -2060,11 +2146,20 @@ function drawMonsterSprites(
   const fov = Math.PI / 3;
   const rays = wallDistances.length;
 
-  for (const monster of monsters) {
-    // Calculate distance and angle to monster
+  // Create array of monsters with distances for depth sorting
+  const monstersWithDistance = monsters.map((monster) => {
     const dx = monster.x - player.x;
     const dy = monster.y - player.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
+    return { monster, distance };
+  });
+
+  // Sort by distance (farther monsters first for proper depth)
+  monstersWithDistance.sort((a, b) => b.distance - a.distance);
+
+  for (const { monster, distance } of monstersWithDistance) {
+    const dx = monster.x - player.x;
+    const dy = monster.y - player.y;
 
     // Skip if monster is too far away
     if (distance > 15) continue;
@@ -2132,13 +2227,20 @@ function drawBulletSprites(
   const fov = Math.PI / 3;
   const rays = 60;
 
-  for (let i = 0; i < bullets.length; i++) {
-    const bullet = bullets[i];
-
-    // Calculate relative position
+  // Create array of bullets with distances for depth sorting
+  const bulletsWithDistance = bullets.map((bullet) => {
     const dx = bullet.x - viewerPlayer.x;
     const dy = bullet.y - viewerPlayer.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
+    return { bullet, distance };
+  });
+
+  // Sort by distance (farther bullets first for proper depth)
+  bulletsWithDistance.sort((a, b) => b.distance - a.distance);
+
+  for (const { bullet, distance } of bulletsWithDistance) {
+    const dx = bullet.x - viewerPlayer.x;
+    const dy = bullet.y - viewerPlayer.y;
 
     if (distance > 20 || distance < 0.1) {
       continue; // Too far or too close
@@ -2219,7 +2321,7 @@ function hasLineOfSight(x1, y1, x2, y2) {
   return true;
 }
 
-// *** NEW *** Generic sprite drawing function
+// Generic sprite drawing function
 function drawSprite(spriteData, colors, x, y, width, height) {
   const spriteHeight = spriteData.length;
   if (spriteHeight === 0) return;
@@ -2246,7 +2348,7 @@ function drawSprite(spriteData, colors, x, y, width, height) {
   }
 }
 
-// *** NEW *** Function to draw the player's weapon (banana)
+// Function to draw the player's weapon (banana)
 function drawWeapon(player, offsetX, offsetY, width, height) {
   const spriteWidth = 20;
   const spriteHeight = 15;
@@ -2307,7 +2409,7 @@ function drawPlayerSpriteWithOcclusion(
     colors = PLAYER_COLORS[player.playerId];
   }
 
-  // *** NEW *** Apply damage flash effect to colors
+  // Apply damage flash effect to colors
   if (player.hitFlashTimer > 0) {
     const flashIntensity = Math.sin(player.hitFlashTimer * 0.8) * 0.5 + 0.5;
     colors = { ...colors }; // Create a copy
@@ -2363,46 +2465,7 @@ function drawPlayerSpriteWithOcclusion(
   }
 }
 
-// *** DEPRECATED *** Keep for compatibility but redirect to new function
-function drawAmongUsSpriteWithOcclusion(
-  offsetX,
-  x,
-  y,
-  width,
-  height,
-  playerId,
-  animFrame,
-  wallDistances,
-  spriteDistance,
-  spriteLeftX,
-  spriteRightX,
-  screenWidth,
-  rays,
-) {
-  // Create a mock player object for compatibility
-  const mockPlayer = {
-    playerId: playerId,
-    spriteType: SPRITE_TYPES.AMONGUS,
-  };
-
-  drawPlayerSpriteWithOcclusion(
-    offsetX,
-    x,
-    y,
-    width,
-    height,
-    mockPlayer,
-    animFrame,
-    wallDistances,
-    spriteDistance,
-    spriteLeftX,
-    spriteRightX,
-    screenWidth,
-    rays,
-  );
-}
-
-// *** NEW *** Simple occlusion check for a single rectangle (bullet)
+// Simple occlusion check for a single rectangle (bullet)
 function drawBulletSpriteWithOcclusion(
   offsetX,
   x,
@@ -2430,7 +2493,7 @@ function drawBulletSpriteWithOcclusion(
   }
 }
 
-// *** MODIFIED *** Generic sprite drawing function that handles different sprite types
+// Generic sprite drawing function that handles different sprite types
 function drawPlayerSprite(x, y, width, height, player, animFrame) {
   let sprite, colors;
 
@@ -2449,7 +2512,7 @@ function drawPlayerSprite(x, y, width, height, player, animFrame) {
     colors = PLAYER_COLORS[player.playerId];
   }
 
-  // *** NEW *** Apply damage flash effect to colors
+  // Apply damage flash effect to colors
   if (player.hitFlashTimer > 0) {
     const flashIntensity = Math.sin(player.hitFlashTimer * 0.8) * 0.5 + 0.5;
     colors = { ...colors }; // Create a copy
@@ -2473,7 +2536,7 @@ function drawPlayerSprite(x, y, width, height, player, animFrame) {
   drawSprite(sprite, colors, x, y, width, height);
 }
 
-// *** NEW *** Draw monster sprite with occlusion
+// Draw monster sprite with occlusion
 function drawMonsterSpriteWithOcclusion(
   offsetX,
   x,
@@ -2571,7 +2634,7 @@ function drawMinimap(player, x, y) {
   // All players on minimap
   for (let i = 0; i < players.length; i++) {
     const p = players[i];
-    // *** MODIFIED *** Use player's main body color for minimap
+    // Use player's main body color for minimap
     const minimapColor = PLAYER_COLORS[p.playerId][2];
     graphics.fillStyle(minimapColor);
     graphics.fillRect(x + p.x * scale - 1.5, y + p.y * scale - 1.5, 3, 3);
@@ -2589,7 +2652,7 @@ function drawMinimap(player, x, y) {
     }
   }
 
-  // *** NEW *** Draw monsters on minimap
+  // Draw monsters on minimap
   graphics.fillStyle(0xff0000); // Red for monsters
   for (const monster of monsters) {
     graphics.fillRect(
@@ -2600,14 +2663,14 @@ function drawMinimap(player, x, y) {
     );
   }
 
-  // *** NEW *** Draw bullets on minimap
+  // Draw bullets on minimap
   graphics.fillStyle(0xffff00); // Yellow
   for (const b of bullets) {
     graphics.fillRect(x + b.x * scale - 0.5, y + b.y * scale - 0.5, 1, 1);
   }
 }
 
-// *** NEW *** Pixel art style health display
+// Pixel art style health display
 function drawPixelHealthDisplay(x, y, healthValue) {
   const scale = 3;
 
@@ -2676,7 +2739,7 @@ function drawPixelHealthDisplay(x, y, healthValue) {
   }
 }
 
-// *** NEW *** Draw individual pixel art digits
+// Draw individual pixel art digits
 function drawPixelDigit(x, y, digit, color, scale) {
   const digitPatterns = {
     0: [
@@ -2764,7 +2827,86 @@ function drawPixelDigit(x, y, digit, color, scale) {
   }
 }
 
-// *** NEW *** Pixel art style score display
+// Brick wall texture pattern (12x8) - realistic staggered brick layout
+const BRICK_PATTERN = [
+  [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+  [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0],
+  [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+  [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+];
+
+// Brick colors with variations
+const BRICK_COLORS = {
+  0: 0x404040, // Dark gray (mortar lines)
+  1: 0x707070, // Light gray (brick face)
+  2: 0x606060, // Medium gray (brick variation)
+  3: 0x808080, // Lighter gray (brick variation)
+};
+
+// Draw a column of textured wall (IMPROVED)
+function drawWallColumn(
+  x,
+  y,
+  width,
+  height,
+  ray,
+  viewOffsetX,
+  viewOffsetY,
+  viewHeight,
+) {
+  // 1. Get the horizontal texture coordinate from the ray
+  // ray.wallX is a stable 0.0-1.0 value
+  let textureU = Math.floor(ray.wallX * BRICK_PATTERN[0].length);
+
+  // 2. Apply shading based on the wall side (N/S vs E/W)
+  // This adds depth and makes corners visible
+  const shadeFactor = ray.side === 1 ? 0.75 : 1.0; // Make E/W walls 25% darker
+
+  // 3. Loop through every *vertical pixel* of the wall column
+  const wallTop = y;
+  const wallBottom = y + height;
+  const textureHeight = BRICK_PATTERN.length;
+
+  for (let lineY = Math.floor(wallTop); lineY < wallBottom; lineY++) {
+    // Ensure we don't draw outside the viewport
+    if (lineY < viewOffsetY || lineY >= viewOffsetY + viewHeight) continue;
+
+    // 4. Calculate the vertical texture coordinate (textureY)
+    // This maps the screen-space Y pixel to a texture-space Y pixel
+    const d = lineY - (viewOffsetY + viewHeight / 2) + height / 2;
+    const textureY = Math.max(
+      0,
+      Math.floor((d * textureHeight) / height) % textureHeight,
+    );
+
+    // 5. Get the color from the brick pattern
+    let colorIndex = BRICK_PATTERN[textureY][textureU];
+
+    // Add subtle brick color variation for non-mortar pixels
+    if (colorIndex === 1) {
+      const variation = (Math.floor(ray.wallX * 10) + textureY) % 4;
+      if (variation === 1) colorIndex = 2;
+      else if (variation === 2) colorIndex = 3;
+    }
+
+    // 6. Apply shading
+    const baseColor = BRICK_COLORS[colorIndex];
+    const r = Math.floor(((baseColor >> 16) & 0xff) * shadeFactor);
+    const g = Math.floor(((baseColor >> 8) & 0xff) * shadeFactor);
+    const b = Math.floor((baseColor & 0xff) * shadeFactor);
+    const shadedColor = (r << 16) | (g << 8) | b;
+
+    // 7. Draw the single pixel-tall line
+    graphics.fillStyle(shadedColor);
+    graphics.fillRect(x, lineY, width, 1);
+  }
+}
+
+// Pixel art style score display
 function drawPixelScoreDisplay(x, y, scoreValue) {
   const scale = 3;
 
