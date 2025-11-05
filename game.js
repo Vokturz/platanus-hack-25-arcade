@@ -66,7 +66,7 @@ class MusicSystem {
     this.currentBeat = 0;
     this.scheduledSounds = [];
 
-    // *** NEW *** Patterns are now properties to be randomized
+    // Patterns are now properties to be randomized
     this.bassPattern = [0, 0, 0, 1, 0, 0, 2, 1, 0, 0, 3, 1, 0, 2, 1, 0];
     this.melodyPattern = [
       4, -1, 3, -1, 2, -1, 3, -1, 2, -1, 1, -1, 0, -1, -1, -1,
@@ -86,7 +86,7 @@ class MusicSystem {
     }
   }
 
-  // *** NEW *** Method to randomize patterns at the start of a game
+  // Method to randomize patterns at the start of a game
   randomizePatterns() {
     console.log("Randomizing music patterns...");
 
@@ -221,7 +221,7 @@ class MusicSystem {
     noise.stop(this.audioContext.currentTime + duration);
   }
 
-  // *** NEW *** Driving metal/MMX bass line (8th note pattern)
+  // Driving metal/MMX bass line (8th note pattern)
   playBassLine(beat) {
     const bassNotes = [
       82.41, // E2
@@ -231,14 +231,14 @@ class MusicSystem {
     ];
 
     // 16-beat (2-measure) 8th-note riff
-    // *** MODIFIED *** Uses the class property pattern
+    // Uses the class property pattern
     const note = bassNotes[this.bassPattern[beat % 16]];
 
     // Punchy square wave bass
     this.createTone(note, this.beatDuration * 0.9, "square", 0.5);
   }
 
-  // *** NEW *** High-energy MMX/Doom melody
+  // High-energy MMX/Doom melody
   playMelody(beat) {
     const melodyNotes = [
       261.63, // C4
@@ -249,7 +249,7 @@ class MusicSystem {
     ];
 
     // 16-beat (2-measure) riff, plays on the quarter notes
-    // *** MODIFIED *** Uses the class property pattern
+    // Uses the class property pattern
     const noteIndex = this.melodyPattern[beat % 16];
 
     if (noteIndex === -1) return; // Rest beat
@@ -260,7 +260,7 @@ class MusicSystem {
     this.createTone(frequency, this.beatDuration * 1.8, "sawtooth", 0.3);
   }
 
-  // *** NEW *** Driving Rock/Metal drum pattern (8th note)
+  // Driving Rock/Metal drum pattern (8th note)
   playDrums(beat) {
     const beatInPattern = beat % 16; // 16-beat (2-measure) loop
 
@@ -351,7 +351,7 @@ class MusicSystem {
         this.masterGain.gain.value = 0.25;
         break;
     }
-    this.beatDuration = 30 / this.bpm; // *** CHANGED *** Now 8th notes (30 / bpm)
+    this.beatDuration = 30 / this.bpm;
   }
 
   startMusic() {
@@ -762,7 +762,7 @@ const DAMAGE_BANANAS_SPRITE = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0],
 ];
 
-// *** NEW *** Buff colors
+// Buff colors
 const BUFF_COLORS = {
   // Health cross colors
   HEALTH: {
@@ -1047,9 +1047,9 @@ const POINTS_DEATH_PENALTY = -50;
 // Game timer constants
 const GAME_DURATION = 120 * 60; // 2 minutes at 60fps (120 seconds * 60 fps)
 const RESPAWN_DELAY = 3 * 60; // 3 seconds at 60fps
-const WALL_COLLISION_BUFFER = 0.1; // Buffer zone around player for wall collision
+const WALL_COLLISION_BUFFER = 0.05; // Buffer zone around player for wall collision
 
-// *** NEW *** Buff system constants
+// Buff system constants
 const BUFF_TYPES = {
   HEALTH: "health",
   DAMAGE: "damage",
@@ -1076,7 +1076,7 @@ let winner = null;
 // Floating point text system
 let floatingTexts = [];
 
-// *** NEW *** Buff system variables
+// Buff system variables
 let buffs = [];
 let nextBuffSpawn = 0;
 
@@ -1138,7 +1138,7 @@ class Player {
     this.score = 0;
     this.respawnTimer = 0; // Timer for respawn delay
     this.isDead = false; // Flag to track if player is dead and waiting to respawn
-    // *** NEW *** Damage buff system
+    // Damage buff system
     this.damageMultiplier = 1;
     this.damageBuffTimer = 0;
     this.lowHealthWarned = false;
@@ -1157,14 +1157,14 @@ class Bullet {
     this.ownerId = ownerId;
     this.speed = 0.1;
     this.lifetime = 100; // Frames before it disappears
-    // *** NEW *** Get damage from owner's multiplier
+    // Get damage from owner's multiplier
     const owner = players.find((p) => p.playerId === ownerId);
     this.damage = BULLET_DAMAGE * (owner ? owner.damageMultiplier : 1);
   }
 }
 
 // Floating text class for point notifications
-// *** NEW *** Floating text class for point notifications
+// Floating text class for point notifications
 class FloatingText {
   constructor(x, y, text, color = "#ffff00", anchor = null, playerId = null) {
     this.x = x;
@@ -1247,7 +1247,7 @@ class FloatingText {
   }
 }
 
-// *** NEW *** Buff class
+// Buff class
 class Buff {
   constructor(x, y, type) {
     this.x = x;
@@ -1376,32 +1376,32 @@ function create() {
 function startNewGame() {
   generateMaze();
   initializePlayers();
-  initializeMonsters(); // *** NEW *** Initialize monsters
-  bullets = []; // *** NEW *** Clear bullets on new game
-  deadMonsters = []; // *** NEW *** Clear dead monsters on new game
+  initializeMonsters(); // Initialize monsters
+  bullets = []; // Clear bullets on new game
+  deadMonsters = []; // Clear dead monsters on new game
 
-  // *** NEW *** Reset game timer and state
+  // Reset game timer and state
   gameTimer = GAME_DURATION;
   gameStartTime = Date.now();
   gameEnded = false;
   winner = null;
 
-  // *** NEW *** Reset all player scores and states
+  // Reset all player scores and states
   for (const player of players) {
     player.score = 0;
     player.isDead = false;
     player.respawnTimer = 0;
-    // *** NEW *** Reset damage multiplier
+    // Reset damage multiplier
     player.damageMultiplier = 1;
     player.damageBuffTimer = 0;
     player.killStreak = 0;
     player.lastKillTime = 0;
   }
 
-  // *** NEW *** Clear floating texts
+  // Clear floating texts
   floatingTexts = [];
 
-  // *** NEW *** Initialize buff system
+  // Initialize buff system
   buffs = [];
   nextBuffSpawn = Date.now() + 5000; // First buff spawns after 5 seconds
 
@@ -1444,8 +1444,7 @@ function initializeMonsters() {
     }
   }
 
-  // Spawn 5 monsters randomly
-  const numMonsters = 5;
+  const numMonsters = 7;
   for (let i = 0; i < numMonsters && emptySpots.length > 0; i++) {
     const spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
     monsters.push(new Monster(spot.x, spot.y));
@@ -1563,9 +1562,9 @@ function update() {
       }
     }
 
-    updatePlayerRespawns(); // *** NEW *** Update player respawn timers
-    updateFloatingTexts(); // *** NEW *** Update floating point texts
-    updateBuffs(); // *** NEW *** Update buff system
+    updatePlayerRespawns(); // Update player respawn timers
+    updateFloatingTexts(); // Update floating point texts
+    updateBuffs(); // Update buff system
     handleInput();
     updateBullets(); // Update bullet logic
     updateMonsters(); // Update monster AI
@@ -1862,7 +1861,7 @@ function drawGameOver() {
 }
 
 // Update player visual effects timers
-// *** NEW *** Update player visual effects timers
+// Update player visual effects timers
 function updatePlayerEffects() {
   for (const player of players) {
     // Update hit flash timer
@@ -1875,7 +1874,7 @@ function updatePlayerEffects() {
       player.damageScreenTimer--;
     }
 
-    // *** NEW *** Update damage buff timer
+    // Update damage buff timer
     if (player.damageBuffTimer > 0) {
       player.damageBuffTimer--;
 
@@ -1916,7 +1915,7 @@ function updatePlayerEffects() {
   }
 }
 
-// *** NEW *** Update buff system
+// Update buff system
 function updateBuffs() {
   // Update existing buffs
   for (let i = buffs.length - 1; i >= 0; i--) {
@@ -1933,7 +1932,7 @@ function updateBuffs() {
   }
 }
 
-// *** NEW *** Spawn a random buff at a random location
+// Spawn a random buff at a random location
 function spawnRandomBuff() {
   const emptySpots = [];
   for (let y = 1; y < MAP_SIZE - 1; y++) {
@@ -2480,7 +2479,7 @@ function drawGame() {
     })
     .setOrigin(0.5);
 
-  // *** NEW *** Draw player scores in bottom left corner (pixel art style)
+  // Draw player scores in bottom left corner (pixel art style)
   for (let i = 0; i < players.length; i++) {
     const player = players[i];
     if (numPlayers === 1) {
@@ -2558,24 +2557,23 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
   // Draw walls
   for (let i = 0; i < rays; i++) {
     const rayAngle = player.a - fov / 2 + (fov / rays) * i;
-    const ray = castRay(player.x, player.y, rayAngle, player); // [NEW]
+    const ray = castRay(player.x, player.y, rayAngle, player);
     wallDistances[i] = ray.projectedDistance;
 
     // Calculate wall height based on the *projected* distance
-    const wallHeight = Math.min((height * 0.8) / ray.projectedDistance, height); // [NEW]
+    const wallHeight = Math.min((height * 0.8) / ray.projectedDistance, height);
     const wallTop = (height - wallHeight) / 2;
 
     // Draw textured wall column
     drawWallColumn(
-      // [NEW]
       offsetX + (width / rays) * i,
       offsetY + wallTop,
       Math.ceil(width / rays) + 1,
       wallHeight,
-      ray, // [NEW] Pass the entire ray object
-      offsetX, // [NEW] Pass view offsets
-      offsetY, // [NEW] Pass view offsets
-      height, // [NEW] Pass view height
+      ray,
+      offsetX,
+      offsetY,
+      height,
     );
   }
 
@@ -2588,7 +2586,7 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
   // Draw bullets as sprites with occlusion
   drawBulletSprites(player, offsetX, offsetY, width, height, wallDistances);
 
-  // *** NEW *** Draw buff sprites with occlusion
+  // Draw buff sprites with occlusion
   drawBuffSprites(player, offsetX, offsetY, width, height, wallDistances);
 
   // Draw the weapon
@@ -3425,7 +3423,7 @@ function drawMinimap(player, x, y) {
     // Don't show dead players on minimap
     if (p.isDead) continue;
 
-    // *** NEW *** Current player is green, others are red
+    // Current player is green, others are red
     const minimapColor = p === player ? 0x00ff00 : 0xff0000;
     graphics.fillStyle(minimapColor);
     graphics.fillRect(x + p.x * scale - 1.5, y + p.y * scale - 1.5, 3, 3);
@@ -3530,7 +3528,7 @@ function drawPixelHealthDisplay(x, y, healthValue) {
   }
 }
 
-// *** NEW *** Draw buff sprites with occlusion
+// Draw buff sprites with occlusion
 function drawBuffSprites(
   player,
   offsetX,
@@ -3663,7 +3661,7 @@ function drawBuffSprites(
   }
 }
 
-// *** NEW *** Generic sprite drawing with occlusion for buffs
+// Generic sprite drawing with occlusion for buffs
 function drawSpriteWithOcclusion(
   spriteData,
   colors,
