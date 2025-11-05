@@ -53,7 +53,7 @@ const config = {
 const game = new Phaser.Game(config);
 
 // =============================================================================
-// AUDIO SYSTEM - Web Audio API Music Generation
+// AUDIO SYSTEM - Web Audio API Music Generation (DOOM-Style)
 // =============================================================================
 class MusicSystem {
   constructor() {
@@ -61,15 +61,16 @@ class MusicSystem {
     this.masterGain = null;
     this.currentTrack = null;
     this.isPlaying = false;
-    this.bpm = 140; // Default BPM is now faster
-    this.beatDuration = 30 / this.bpm; // Set to 8th notes
+    this.bpm = 150; // DOOM-like tempo
+    this.beatDuration = 30 / this.bpm; // 8th notes
     this.currentBeat = 0;
     this.scheduledSounds = [];
 
-    // Patterns are now properties to be randomized
-    this.bassPattern = [0, 0, 0, 1, 0, 0, 2, 1, 0, 0, 3, 1, 0, 2, 1, 0];
-    this.melodyPattern = [
-      4, -1, 3, -1, 2, -1, 3, -1, 2, -1, 1, -1, 0, -1, -1, -1,
+    // DOOM-style patterns with heavier, chromatic riffs
+    this.bassPattern = [0, 0, 0, 0, 3, 3, 2, 2, 0, 0, 0, 0, 4, 4, 3, 3];
+    this.melodyPattern = [0, -1, 0, 2, 3, -1, 2, -1, 0, -1, 0, 2, 5, -1, 4, -1];
+    this.harmonyPattern = [
+      2, -1, 2, 4, 5, -1, 4, -1, 2, -1, 2, 4, 7, -1, 6, -1,
     ];
   }
 
@@ -79,7 +80,7 @@ class MusicSystem {
         window.webkitAudioContext)();
       this.masterGain = this.audioContext.createGain();
       this.masterGain.connect(this.audioContext.destination);
-      this.masterGain.gain.value = 0.3; // Master volume
+      this.masterGain.gain.value = 0.35; // Master volume
       console.log("Audio system initialized");
     } catch (error) {
       console.warn("Audio initialization failed:", error);
@@ -88,47 +89,65 @@ class MusicSystem {
 
   // Method to randomize patterns at the start of a game
   randomizePatterns() {
-    console.log("Randomizing music patterns...");
-
-    // Randomize Bass Pattern
-    const numBassNotes = 4; // Based on bassNotes array length
+    // DOOM-inspired Bass Pattern - Heavy, chromatic power chords
+    const numBassNotes = 7; // More notes for chromatic movement
     this.bassPattern = [];
     for (let i = 0; i < 16; i++) {
-      // Keep the first beat of each measure as the root note for stability
+      // Strong downbeats for heaviness
       if (i === 0 || i === 8) {
-        this.bassPattern.push(0);
+        this.bassPattern.push(0); // Root note
+      } else if (i === 4 || i === 12) {
+        this.bassPattern.push(Math.random() < 0.6 ? 0 : 3); // Fourth interval
       }
-      // 20% chance to hold the previous note
-      else if (i > 0 && Math.random() < 0.2) {
-        this.bassPattern.push(this.bassPattern[i - 1]);
+      // Create chromatic runs
+      else if (i > 0 && Math.random() < 0.3) {
+        const prevNote = this.bassPattern[i - 1];
+        const chromaticMove = Math.random() < 0.5 ? 1 : -1;
+        this.bassPattern.push(
+          Math.max(0, Math.min(numBassNotes - 1, prevNote + chromaticMove)),
+        );
       }
-      // Otherwise, pick a new random note
-      else {
+      // Heavy palm-muted chugging
+      else if (Math.random() < 0.4) {
+        this.bassPattern.push(this.bassPattern[i - 1] || 0);
+      } else {
         this.bassPattern.push(Math.floor(Math.random() * numBassNotes));
       }
     }
 
-    // Randomize Melody Pattern
-    const numMelodyNotes = 5; // Based on melodyNotes array length
+    // DOOM-inspired Melody - Angular, dissonant leads
+    const numMelodyNotes = 8;
     this.melodyPattern = [];
     for (let i = 0; i < 16; i++) {
-      // Only play notes on quarter beats (even indices)
-      if (i % 2 !== 0) {
-        this.melodyPattern.push(-1); // Rest on off-beats
-      }
-      // 40% chance of a rest on the on-beat
-      else if (Math.random() < 0.4) {
+      if (i % 4 === 0) {
+        // Strong melodic hits on downbeats
+        this.melodyPattern.push(Math.floor(Math.random() * 4));
+      } else if (i % 2 !== 0) {
+        this.melodyPattern.push(
+          Math.random() < 0.7 ? -1 : Math.floor(Math.random() * numMelodyNotes),
+        );
+      } else if (Math.random() < 0.35) {
         this.melodyPattern.push(-1);
-      }
-      // Otherwise, play a note
-      else {
+      } else {
         this.melodyPattern.push(Math.floor(Math.random() * numMelodyNotes));
       }
     }
+
+    // Harmony layer for thickness
+    this.harmonyPattern = this.melodyPattern.map((note) => {
+      if (note === -1) return -1;
+      return Math.min(numMelodyNotes - 1, note + 2); // Third above
+    });
   }
 
-  // Create a synthesized tone
-  createTone(frequency, duration, type = "sawtooth", volume = 0.5) {
+  // Create a synthesized tone with distortion for heaviness
+  createTone(
+    frequency,
+    duration,
+    type = "sawtooth",
+    volume = 0.5,
+    distortion = 0,
+  ) {
     if (!this.audioContext) return;
 
     const oscillator = this.audioContext.createOscillator();
@@ -140,26 +159,51 @@ class MusicSystem {
       this.audioContext.currentTime,
     );
 
-    // ADSR envelope for more interesting sounds
+    // Add distortion for heavy guitar-like sound
+    let processingChain = oscillator;
+    if (distortion > 0) {
+      const distortionNode = this.audioContext.createWaveShaper();
+      distortionNode.curve = this.makeDistortionCurve(distortion * 400);
+      distortionNode.oversample = "4x";
+
+      oscillator.connect(distortionNode);
+      processingChain = distortionNode;
+    }
+
+    // ADSR envelope - tighter for metal sound
     gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
     gainNode.gain.linearRampToValueAtTime(
       volume,
-      this.audioContext.currentTime + 0.01,
+      this.audioContext.currentTime + 0.005,
     );
     gainNode.gain.exponentialRampToValueAtTime(
-      volume * 0.7,
-      this.audioContext.currentTime + duration * 0.3,
+      volume * 0.8,
+      this.audioContext.currentTime + duration * 0.2,
     );
     gainNode.gain.exponentialRampToValueAtTime(
       0.01,
       this.audioContext.currentTime + duration,
     );
 
-    oscillator.connect(gainNode);
+    processingChain.connect(gainNode);
     gainNode.connect(this.masterGain);
 
     oscillator.start(this.audioContext.currentTime);
     oscillator.stop(this.audioContext.currentTime + duration);
+  }
+
+  // Create distortion curve for heavy guitar tones
+  makeDistortionCurve(amount) {
+    const samples = 44100;
+    const curve = new Float32Array(samples);
+    const deg = Math.PI / 180;
+
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2) / samples - 1;
+      curve[i] =
+        ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+    }
+    return curve;
   }
 
   // Create drum sounds
@@ -221,75 +265,114 @@ class MusicSystem {
     noise.stop(this.audioContext.currentTime + duration);
   }
 
-  // Driving metal/MMX bass line (8th note pattern)
+  // DOOM-style heavy bass line with power chord feel
   playBassLine(beat) {
     const bassNotes = [
-      82.41, // E2
-      87.31, // F2
-      98.0, // G2
-      110.0, // A2
+      65.41, // C2  - Root
+      69.3, // C#2 - Chromatic
+      73.42, // D2  - Second
+      77.78, // D#2 - Chromatic
+      82.41, // E2  - Third
+      87.31, // F2  - Fourth
+      92.5, // F#2 - Tritone (devil's interval!)
     ];
 
-    // 16-beat (2-measure) 8th-note riff
-    // Uses the class property pattern
     const note = bassNotes[this.bassPattern[beat % 16]];
 
-    // Punchy square wave bass
-    this.createTone(note, this.beatDuration * 0.9, "square", 0.5);
+    // Heavy, distorted bass - like DOOM's guitar tone
+    this.createTone(note, this.beatDuration * 0.85, "sawtooth", 0.6, 1);
+
+    // Add sub-bass octave for extra heaviness
+    this.createTone(note * 0.5, this.beatDuration * 0.85, "sine", 0.3, 0);
+
+    // Power chord fifth
+    if (beat % 4 === 0 || beat % 4 === 2) {
+      this.createTone(
+        note * 1.5,
+        this.beatDuration * 0.85,
+        "sawtooth",
+        0.35,
+        1,
+      );
+    }
   }
 
-  // High-energy MMX/Doom melody
+  // Aggressive DOOM-style lead melody
   playMelody(beat) {
     const melodyNotes = [
-      261.63, // C4
-      329.63, // E4
-      392.0, // G4
-      440.0, // A4
-      523.25, // C5
+      261.63, // C4  - Root
+      277.18, // C#4 - Chromatic
+      293.66, // D4  - Second
+      311.13, // D#4 - Chromatic
+      329.63, // E4  - Third
+      349.23, // F4  - Fourth
+      369.99, // F#4 - Tritone
+      392.0, // G4  - Fifth
     ];
 
-    // 16-beat (2-measure) riff, plays on the quarter notes
-    // Uses the class property pattern
     const noteIndex = this.melodyPattern[beat % 16];
-
-    if (noteIndex === -1) return; // Rest beat
+    if (noteIndex === -1) return;
 
     const frequency = melodyNotes[noteIndex];
 
-    // Sawtooth for a "fake guitar" lead sound, holds for a full quarter note
-    this.createTone(frequency, this.beatDuration * 1.8, "sawtooth", 0.3);
+    // Lead guitar tone - bright and aggressive
+    this.createTone(frequency, this.beatDuration * 1.5, "sawtooth", 0.35, 0.8);
+
+    // Slight detune for chorus effect (DOOM's signature sound)
+    this.createTone(
+      frequency * 1.01,
+      this.beatDuration * 1.5,
+      "sawtooth",
+      0.25,
+      0.8,
+    );
   }
 
-  // Driving Rock/Metal drum pattern (8th note)
+  // Add harmony layer for thickness
+  playHarmony(beat) {
+    const melodyNotes = [
+      261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.0,
+    ];
+
+    const noteIndex = this.harmonyPattern[beat % 16];
+    if (noteIndex === -1) return;
+
+    const frequency = melodyNotes[noteIndex];
+
+    // Harmony at lower volume
+    this.createTone(frequency, this.beatDuration * 1.5, "sawtooth", 0.2, 0.6);
+  }
+
+  // Aggressive metal drum pattern like DOOM
   playDrums(beat) {
-    const beatInPattern = beat % 16; // 16-beat (2-measure) loop
+    const beatInPattern = beat % 16;
 
-    // Hi-hats: Constant 8th notes for driving feel
-    this.createDrum("hihat", 0.4);
+    // Hi-hats: Constant 8th notes with accents
+    const hihatVolume = beat % 4 === 0 ? 0.6 : 0.35;
+    this.createDrum("hihat", hihatVolume);
 
-    // Snare on beats 2 and 4 (8th-note indices 2, 6, 10, 14)
-    if (
-      beatInPattern === 2 ||
-      beatInPattern === 6 ||
-      beatInPattern === 10 ||
-      beatInPattern === 14
-    ) {
-      this.createDrum("snare", 0.8);
+    // Snare on 2 and 4 - powerful backbeat
+    if (beatInPattern === 4 || beatInPattern === 12) {
+      this.createDrum("snare", 1.0);
     }
 
-    // Kick on beats 1 and 3 (indices 0, 4, 8, 12)
+    // Double bass kick pattern - DOOM style
     if (
       beatInPattern === 0 ||
-      beatInPattern === 4 ||
+      beatInPattern === 2 ||
+      beatInPattern === 5 ||
+      beatInPattern === 6 ||
       beatInPattern === 8 ||
-      beatInPattern === 12
+      beatInPattern === 10 ||
+      beatInPattern === 13 ||
+      beatInPattern === 14
     ) {
-      this.createDrum("kick", 1.0);
+      this.createDrum("kick", 0.95);
     }
 
-    // Syncopated kick on the 'and' of 4 (indices 7, 15) for a metal feel
+    // Extra snare hits for fills
     if (beatInPattern === 7 || beatInPattern === 15) {
-      this.createDrum("kick", 0.7);
+      this.createDrum("snare", 0.6);
     }
   }
 
@@ -303,6 +386,7 @@ class MusicSystem {
 
     this.playBassLine(this.currentBeat);
     this.playMelody(this.currentBeat);
+    this.playHarmony(this.currentBeat); // Add harmony layer
     this.playDrums(this.currentBeat);
 
     this.currentBeat++;
@@ -314,18 +398,16 @@ class MusicSystem {
   getCurrentGameState() {
     if (typeof currentState !== "undefined") {
       if (currentState === "menu") return "menu";
-      if (currentState === "playing") {
+      if (currentState === "game") {
         // Check if game is intense (low health, many monsters, etc.)
         if (typeof players !== "undefined" && players.length > 0) {
-          const lowHealthPlayers = players.filter((p) => p.health < 30).length;
-          const monstersNearby =
-            typeof monsters !== "undefined" ? monsters.length : 0;
+          const lowHealthPlayers = players.filter((p) => p.health < 35).length;
 
-          if (lowHealthPlayers > 0 || monstersNearby > 3) {
+          if (lowHealthPlayers > 0) {
             return "intense";
           }
         }
-        return "playing";
+        return "game";
       }
       if (currentState === "gameOver") return "gameOver";
     }
@@ -335,20 +417,20 @@ class MusicSystem {
   adaptMusicToGameState(state) {
     switch (state) {
       case "menu":
-        this.bpm = 120;
-        this.masterGain.gain.value = 0.2;
+        this.bpm = 90;
+        this.masterGain.gain.value = 0.25;
         break;
-      case "playing":
-        this.bpm = 140; // Faster
-        this.masterGain.gain.value = 0.3;
+      case "game":
+        this.bpm = 140; // Classic DOOM tempo
+        this.masterGain.gain.value = 0.35;
         break;
       case "intense":
-        this.bpm = 160; // Much faster
-        this.masterGain.gain.value = 0.4;
+        this.bpm = 160; // Intense battle tempo
+        this.masterGain.gain.value = 0.45;
         break;
       case "gameOver":
-        this.bpm = 90; // Slower
-        this.masterGain.gain.value = 0.25;
+        this.bpm = 80; // Slow and heavy
+        this.masterGain.gain.value = 0.3;
         break;
     }
     this.beatDuration = 30 / this.bpm;
@@ -381,21 +463,21 @@ class MusicSystem {
   playShootSound() {
     if (!this.audioContext) return;
     // Quick laser-like sound
-    this.createTone(800, 0.1, "square", 0.3);
-    setTimeout(() => this.createTone(400, 0.05, "square", 0.2), 50);
+    this.createTone(800, 0.1, "square", 0.3, 0);
+    setTimeout(() => this.createTone(400, 0.05, "square", 0.2, 0), 50);
   }
 
   playHitSound() {
     if (!this.audioContext) return;
     // Damage sound - harsh and brief
-    this.createTone(150, 0.2, "sawtooth", 0.5);
+    this.createTone(150, 0.2, "sawtooth", 0.5, 0.5);
   }
 
   playPickupSound() {
     if (!this.audioContext) return;
     // Ascending tones for pickup
-    this.createTone(440, 0.1, "sine", 0.4);
-    setTimeout(() => this.createTone(660, 0.1, "sine", 0.3), 100);
+    this.createTone(440, 0.1, "sine", 0.4, 0);
+    setTimeout(() => this.createTone(660, 0.1, "sine", 0.3, 0), 100);
   }
 
   playDeathSound() {
@@ -403,12 +485,11 @@ class MusicSystem {
     // Descending dramatic sound
     for (let i = 0; i < 5; i++) {
       setTimeout(() => {
-        this.createTone(220 - i * 30, 0.15, "sawtooth", 0.4 - i * 0.05);
+        this.createTone(220 - i * 30, 0.15, "sawtooth", 0.4 - i * 0.05, 0.7);
       }, i * 100);
     }
   }
 }
-
 // Global music system instance
 const musicSystem = new MusicSystem();
 
@@ -1852,7 +1933,7 @@ function drawGameOver() {
 
   // Restart instruction
   scene.add
-    .text(400, 520, "Press ESC to return to menu", {
+    .text(400, 520, "Press START to return to menu", {
       fontSize: "16px",
       color: "#888888",
       fontFamily: "monospace",
@@ -1860,7 +1941,6 @@ function drawGameOver() {
     .setOrigin(0.5);
 }
 
-// Update player visual effects timers
 // Update player visual effects timers
 function updatePlayerEffects() {
   for (const player of players) {
