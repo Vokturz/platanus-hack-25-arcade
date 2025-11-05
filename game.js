@@ -1112,7 +1112,7 @@ function addRandomPaths() {
 
 // Game constants
 const PLAYER_MAX_HEALTH = 100;
-const BULLET_DAMAGE = 25;
+const BULLET_DAMAGE = 20;
 const MONSTER_DAMAGE = 10;
 const MONSTER_ATTACK_COOLDOWN = 240; // frames between attacks
 const MONSTER_DETECTION_RANGE = 3.0;
@@ -1630,6 +1630,12 @@ function respawnPlayer(player) {
 function update() {
   graphics.clear();
 
+  scene.children.getChildren().forEach((child) => {
+    if (child.type === "Text") {
+      child.destroy();
+    }
+  });
+
   if (currentState === "menu") {
     drawMenu();
   } else if (currentState === "gameOver") {
@@ -1859,6 +1865,13 @@ function drawMenu() {
 function drawGameOver() {
   graphics.fillStyle(0x000000, 1);
   graphics.fillRect(0, 0, 800, 600);
+
+  // Clear any existing text objects
+  scene.children.getChildren().forEach((child) => {
+    if (child.type === "Text") {
+      child.destroy();
+    }
+  });
 
   // Title
   graphics.fillStyle(0xffffff, 1);
@@ -2362,15 +2375,6 @@ function updateBullets() {
 }
 
 function handleInput() {
-  // Clear any text objects when in game mode
-  if (currentState === "game") {
-    scene.children.getChildren().forEach((child) => {
-      if (child.type === "Text") {
-        child.destroy();
-      }
-    });
-  }
-
   for (let i = 0; i < numPlayers; i++) {
     const p = players[i];
     const prefix = i === 0 ? "P1" : "P2";
@@ -2535,6 +2539,13 @@ function isPlayerCollision(newX, newY, playerIndex) {
 }
 
 function drawGame() {
+  // Clear any existing text objects
+  scene.children.getChildren().forEach((child) => {
+    if (child.type === "Text") {
+      child.destroy();
+    }
+  });
+
   if (numPlayers === 1) {
     drawPlayer3D(players[0], 0, 0, 800, 600);
   } else {
