@@ -531,7 +531,7 @@ const POINTS_DEATH_PENALTY = -10;
 // Game timer constants
 const GAME_DURATION = 120 * 60; // 2 minutes at 60fps (120 seconds * 60 fps)
 const RESPAWN_DELAY = 3 * 60; // 3 seconds at 60fps
-const WALL_COLLISION_BUFFER = 0.2; // Buffer zone around player for wall collision
+const WALL_COLLISION_BUFFER = 0.1; // Buffer zone around player for wall collision
 
 // Players
 const players = [];
@@ -586,7 +586,7 @@ class Player {
     this.playerId = playerId;
     this.spriteType = spriteType; // Store selected sprite type
     this.moveSpeed = 0.03;
-    this.rotSpeed = 0.02;
+    this.rotSpeed = 0.03;
     this.isMoving = false;
     this.animFrame = 0;
     this.animTimer = 0;
@@ -1770,11 +1770,19 @@ function drawGame() {
     })
     .setOrigin(0.5);
 
-  // Draw player scores in bottom left corner (pixel art style)
+  // *** NEW *** Draw player scores in bottom left corner (pixel art style)
   for (let i = 0; i < players.length; i++) {
     const player = players[i];
-    const yPos = 550 - i * 40; // Stack scores vertically with more spacing
-    drawPixelScoreDisplay(20, yPos, player.score);
+    if (numPlayers === 1) {
+      // Single player - score in bottom left
+      const yPos = 550 - i * 40;
+      drawPixelScoreDisplay(20, yPos, player.score, i + 1);
+    } else {
+      // Split screen - each player's score in their own viewport
+      const xPos = i === 0 ? 20 : 422; // Left side for P1, right side for P2
+      const yPos = 550;
+      drawPixelScoreDisplay(xPos, yPos, player.score, i + 1);
+    }
   }
 
   // Draw floating point texts
@@ -1863,8 +1871,23 @@ function drawPlayer3D(player, offsetX, offsetY, width, height) {
   // This is drawn on top of the 3D world, but before the 2D UI overlays
   drawWeapon(player, offsetX, offsetY, width, height);
 
-  // Draw minimap in corner
-  drawMinimap(player, offsetX + 10, offsetY + 10);
+  // Draw minimap in corner - position based on player
+  let minimapX, minimapY;
+  if (numPlayers === 1) {
+    // Single player - top left
+    minimapX = offsetX + 10;
+    minimapY = offsetY + 10;
+  } else {
+    // Split screen - P1 top left, P2 top right
+    if (player.playerId === 0) {
+      minimapX = offsetX + 10;
+      minimapY = offsetY + 10;
+    } else {
+      minimapX = offsetX + width - 90; // 90 = minimap size (80) + margin (10)
+      minimapY = offsetY + 10;
+    }
+  }
+  drawMinimap(player, minimapX, minimapY);
 
   // Draw Health Percentage (Pixel Art Doom style)
   const healthValue = Math.max(0, Math.floor(player.health));
@@ -2634,8 +2657,8 @@ function drawMinimap(player, x, y) {
   // All players on minimap
   for (let i = 0; i < players.length; i++) {
     const p = players[i];
-    // Use player's main body color for minimap
-    const minimapColor = PLAYER_COLORS[p.playerId][2];
+    // *** NEW *** Current player is green, others are red
+    const minimapColor = p === player ? 0x00ff00 : 0xff0000;
     graphics.fillStyle(minimapColor);
     graphics.fillRect(x + p.x * scale - 1.5, y + p.y * scale - 1.5, 3, 3);
 
