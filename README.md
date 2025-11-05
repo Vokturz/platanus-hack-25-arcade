@@ -12,6 +12,7 @@ At [Platanus Hack 25](https://hack.platan.us) we will have an arcade machine. Wh
 
 **Banana Mayhem** is a retro-style 2.5D maze shooter that combines the best of classic Doom gameplay with modern indie aesthetics. Navigate through procedurally generated mazes using raycasting graphics while battling hordes of demonic banana monsters!
 
+
 ### 🎮 Game Features
 - **First-person 2.5D perspective** using raycasting technology
 - **Procedurally generated mazes** for endless replayability
