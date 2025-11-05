@@ -1,4 +1,4 @@
 {
-  "game_name": "<FILL THIS>",
-  "description": "<FILL THIS>"
+  "game_name": "Banana Mayhem",
+  "description": "A retro-style 2.5D maze shooter inspired by classic Doom gameplay. Navigate through procedurally generated mazes in first-person perspective using raycasting graphics. Players control Among Us-style characters armed with banana guns, fighting against demonic banana monsters. Features single-player and two-player split-screen modes, health/damage buff system, scoring mechanics, and arcade-style controls. Survive waves of monsters, collect power-ups, and compete for the highest score in this pixel-art homage to 90s FPS games."
 }

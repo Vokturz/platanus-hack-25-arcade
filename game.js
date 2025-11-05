@@ -1747,7 +1747,7 @@ function drawMenu() {
     .setDepth(1);
 
   scene.add
-    .text(400, 430, "WASD/Arrows: Move & Turn", {
+    .text(400, 430, "(P1: WASD, P2: Arrows): Move & Turn", {
       fontSize: "20px",
       color: "#888888",
       fontFamily: "monospace",
@@ -1755,27 +1755,25 @@ function drawMenu() {
     .setOrigin(0.5)
     .setDepth(1);
 
-  scene.add
-    .text(400, 460, "Hold I/T + Left/Right: Strafe", {
-      fontSize: "20px",
-      color: "#88ff88",
-      fontFamily: "monospace",
-    })
-    .setOrigin(0.5)
-    .setDepth(1);
-
   // Added shoot controls info
   scene.add
-    .text(400, 490, "P1 'U' / P2 'R': Shoot", {
+    .text(400, 490, "Shoot with A (P1: U, P2: R)", {
       fontSize: "20px",
       color: "#ff8888",
       fontFamily: "monospace",
     })
     .setOrigin(0.5)
     .setDepth(1);
-}
 
-// Sprite selection removed - game always uses Among Us sprites
+  scene.add
+    .text(400, 460, "Hold B (P1: I P2: T) + Left/Right: Strafe", {
+      fontSize: "20px",
+      color: "#88ff88",
+      fontFamily: "monospace",
+    })
+    .setOrigin(0.5)
+    .setDepth(1);
+}
 
 // Draw game over screen
 function drawGameOver() {
