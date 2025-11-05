@@ -773,7 +773,7 @@ class Buff {
   applyBuff(player) {
     if (this.type === BUFF_TYPES.HEALTH) {
       player.health = Math.min(
-        player.maxHealth,
+        player.maxHealth * 5,
         player.health + HEALTH_BUFF_AMOUNT,
       );
       createFloatingText(
@@ -1687,21 +1687,80 @@ function updateBullets() {
     b.x = newX;
     b.y = newY;
 
-    // Check for player collision
+    // Check for collisions - prioritize closer objects
+    let hitSomething = false;
+    let closestDistance = Infinity;
+    let closestTarget = null;
+    let closestType = null;
+
+    // Check monster collisions first (they might be closer)
+    for (let j = 0; j < monsters.length; j++) {
+      const monster = monsters[j];
+      const dx = b.x - monster.x;
+      const dy = b.y - monster.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const monsterRadius = 0.3;
+
+      if (dist < monsterRadius && dist < closestDistance) {
+        closestDistance = dist;
+        closestTarget = { monster, index: j };
+        closestType = "monster";
+      }
+    }
+
+    // Check player collisions
     for (let j = 0; j < players.length; j++) {
       const p = players[j];
       // Don't shoot self
       if (p.playerId === b.ownerId) continue;
+      // Don't hit dead players
+      if (p.isDead) continue;
 
       const dx = b.x - p.x;
       const dy = b.y - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const playerRadius = 0.5; // Collision radius for player
 
-      if (dist < playerRadius) {
-        // Hit!
+      if (dist < playerRadius && dist < closestDistance) {
+        closestDistance = dist;
+        closestTarget = { player: p, index: j };
+        closestType = "player";
+      }
+    }
+
+    // Hit the closest target
+    if (closestTarget) {
+      bullets.splice(i, 1); // Remove bullet
+
+      if (closestType === "monster") {
+        const monster = closestTarget.monster;
+        // Hit monster!
+        monster.health -= b.damage; // Use bullet's damage (includes multiplier)
+        monster.hitFlashTimer = 15; // Flash for 15 frames
+
+        if (monster.health <= 0) {
+          // Award points to shooter for killing monster
+          const shooter = players.find(
+            (player) => player.playerId === b.ownerId,
+          );
+          if (shooter) {
+            shooter.score += POINTS_MONSTER_KILL;
+            createFloatingText(
+              shooter.x * 50,
+              shooter.y * 50,
+              `+${POINTS_MONSTER_KILL}`,
+              "#ffff00",
+            );
+          }
+
+          // Add to dead monsters for respawning
+          deadMonsters.push(new DeadMonster(Date.now()));
+          monsters.splice(closestTarget.index, 1); // Remove dead monster
+        }
+      } else if (closestType === "player") {
+        const p = closestTarget.player;
+        // Hit player!
         p.health -= b.damage; // Use bullet's damage (includes multiplier)
-        bullets.splice(i, 1); // Remove bullet
 
         // Add visual damage effects
         p.hitFlashTimer = 20; // Flash for 20 frames
@@ -1734,44 +1793,6 @@ function updateBullets() {
           p.isDead = true;
           p.respawnTimer = RESPAWN_DELAY;
         }
-        break; // Bullet hits one player and is destroyed
-      }
-    }
-
-    // Check bullet vs monster collisions
-    for (let j = 0; j < monsters.length; j++) {
-      const monster = monsters[j];
-      const dx = b.x - monster.x;
-      const dy = b.y - monster.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const monsterRadius = 0.3;
-
-      if (dist < monsterRadius) {
-        // Hit monster!
-        monster.health -= b.damage; // Use bullet's damage (includes multiplier)
-        monster.hitFlashTimer = 15; // Flash for 15 frames
-        bullets.splice(i, 1); // Remove bullet
-
-        if (monster.health <= 0) {
-          // *** NEW *** Award points to shooter for killing monster
-          const shooter = players.find(
-            (player) => player.playerId === b.ownerId,
-          );
-          if (shooter) {
-            shooter.score += POINTS_MONSTER_KILL;
-            createFloatingText(
-              shooter.x * 50,
-              shooter.y * 50,
-              `+${POINTS_MONSTER_KILL}`,
-              "#ffff00",
-            );
-          }
-
-          // Add to dead monsters for respawning
-          deadMonsters.push(new DeadMonster(Date.now()));
-          monsters.splice(j, 1); // Remove dead monster
-        }
-        break;
       }
     }
   }
@@ -1935,6 +1956,7 @@ function isPlayerCollision(newX, newY, playerIndex) {
     if (i === playerIndex) continue; // Don't check collision with self
 
     const otherPlayer = players[i];
+    if (otherPlayer.isDead) continue; // Don't collide with dead players
     const dx = newX - otherPlayer.x;
     const dy = newY - otherPlayer.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -2273,6 +2295,7 @@ function drawPlayerSprites(
   for (let i = 0; i < players.length; i++) {
     const otherPlayer = players[i];
     if (otherPlayer === viewerPlayer) continue; // Don't draw self
+    if (otherPlayer.isDead) continue; // Don't draw dead players
 
     const dx = otherPlayer.x - viewerPlayer.x;
     const dy = otherPlayer.y - viewerPlayer.y;
@@ -2601,8 +2624,67 @@ function drawWeapon(player, offsetX, offsetY, width, height) {
     y -= kickAmount;
   }
 
-  // Draw the banana sprite
-  drawSprite(BANANA_SPRITE, BANANA_COLORS, x, y, w, h);
+  // Draw the banana sprite with enhanced colors if damage buff is active
+  let weaponColors = BANANA_COLORS;
+  if (player.damageBuffTimer > 0) {
+    // Create bright effect for damage buff
+    weaponColors = {};
+    for (let colorKey in BANANA_COLORS) {
+      const originalColor = BANANA_COLORS[colorKey];
+      const r = (originalColor >> 16) & 0xff;
+      const g = (originalColor >> 8) & 0xff;
+      const b = originalColor & 0xff;
+
+      // Brighten with golden glow
+      const brightR = Math.min(255, r + 80);
+      const brightG = Math.min(255, g + 60);
+      const brightB = Math.min(255, b + 30);
+
+      weaponColors[colorKey] = (brightR << 16) | (brightG << 8) | brightB;
+    }
+  }
+
+  // Draw glow effect if damage buff is active
+  if (player.damageBuffTimer > 0) {
+    // Create glow colors (dimmed versions for the glow effect)
+    const glowColors = {};
+    for (let colorKey in weaponColors) {
+      const originalColor = weaponColors[colorKey];
+      const r = (originalColor >> 16) & 0xff;
+      const g = (originalColor >> 8) & 0xff;
+      const b = originalColor & 0xff;
+
+      // Create golden glow tint
+      const glowR = Math.min(255, Math.floor((r + 255) * 0.7));
+      const glowG = Math.min(255, Math.floor((g + 215) * 0.7));
+      const glowB = Math.min(255, Math.floor((b + 0) * 0.5));
+
+      glowColors[colorKey] = (glowR << 16) | (glowG << 8) | glowB;
+    }
+
+    // Draw glow layers around the weapon
+    const glowOffsets = [
+      [-2, -2],
+      [2, -2],
+      [-2, 2],
+      [2, 2], // Close corners
+      [-4, 0],
+      [4, 0],
+      [0, -4],
+      [0, 4], // Close sides
+      [-3, -3],
+      [3, -3],
+      [-3, 3],
+      [3, 3], // Medium corners
+    ];
+
+    // Draw each glow layer
+    for (const [dx, dy] of glowOffsets) {
+      drawSprite(BANANA_SPRITE, glowColors, x + dx, y + dy, w, h);
+    }
+  }
+
+  drawSprite(BANANA_SPRITE, weaponColors, x, y, w, h);
 }
 
 function drawPlayerSpriteWithOcclusion(
@@ -2865,6 +2947,9 @@ function drawMinimap(player, x, y) {
   // All players on minimap
   for (let i = 0; i < players.length; i++) {
     const p = players[i];
+    // Don't show dead players on minimap
+    if (p.isDead) continue;
+
     // *** NEW *** Current player is green, others are red
     const minimapColor = p === player ? 0x00ff00 : 0xff0000;
     graphics.fillStyle(minimapColor);
@@ -2998,7 +3083,58 @@ function drawBuffSprites(
     const dx = buff.x - player.x;
     const dy = buff.y - player.y;
 
-    if (distance > 10) continue; // Too far away
+    if (distance > 15) continue; // Too far away
+
+    // Check if buff is occluded by monsters or other players
+    let occluded = false;
+
+    // Check occlusion by monsters
+    for (const monster of monsters) {
+      const mdx = monster.x - player.x;
+      const mdy = monster.y - player.y;
+      const mDistance = Math.sqrt(mdx * mdx + mdy * mdy);
+
+      if (mDistance < distance && mDistance > 0.1) {
+        const monsterAngle = Math.atan2(mdy, mdx);
+        const buffAngle = Math.atan2(dy, dx);
+        const angleDiff = Math.abs(monsterAngle - buffAngle);
+
+        if (angleDiff < 0.3 || angleDiff > Math.PI * 2 - 0.3) {
+          const crossProduct = mdx * dy - mdy * dx;
+          if (Math.abs(crossProduct) < 0.5) {
+            occluded = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // Check occlusion by other players
+    if (!occluded) {
+      for (const otherPlayer of players) {
+        if (otherPlayer === player || otherPlayer.isDead) continue;
+
+        const pdx = otherPlayer.x - player.x;
+        const pdy = otherPlayer.y - player.y;
+        const pDistance = Math.sqrt(pdx * pdx + pdy * pdy);
+
+        if (pDistance < distance && pDistance > 0.1) {
+          const playerAngle = Math.atan2(pdy, pdx);
+          const buffAngle = Math.atan2(dy, dx);
+          const angleDiff = Math.abs(playerAngle - buffAngle);
+
+          if (angleDiff < 0.3 || angleDiff > Math.PI * 2 - 0.3) {
+            const crossProduct = pdx * dy - pdy * dx;
+            if (Math.abs(crossProduct) < 0.5) {
+              occluded = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (occluded) continue;
 
     // Add floating animation
     const floatY = buff.y + buff.floatOffset;
