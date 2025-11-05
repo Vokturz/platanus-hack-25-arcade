@@ -52,6 +52,366 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+// =============================================================================
+// AUDIO SYSTEM - Web Audio API Music Generation
+// =============================================================================
+class MusicSystem {
+  constructor() {
+    this.audioContext = null;
+    this.masterGain = null;
+    this.currentTrack = null;
+    this.isPlaying = false;
+    this.bpm = 140; // Default BPM is now faster
+    this.beatDuration = 30 / this.bpm; // Set to 8th notes
+    this.currentBeat = 0;
+    this.scheduledSounds = [];
+
+    // *** NEW *** Patterns are now properties to be randomized
+    this.bassPattern = [0, 0, 0, 1, 0, 0, 2, 1, 0, 0, 3, 1, 0, 2, 1, 0];
+    this.melodyPattern = [
+      4, -1, 3, -1, 2, -1, 3, -1, 2, -1, 1, -1, 0, -1, -1, -1,
+    ];
+  }
+
+  async initialize() {
+    try {
+      this.audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.connect(this.audioContext.destination);
+      this.masterGain.gain.value = 0.3; // Master volume
+      console.log("Audio system initialized");
+    } catch (error) {
+      console.warn("Audio initialization failed:", error);
+    }
+  }
+
+  // *** NEW *** Method to randomize patterns at the start of a game
+  randomizePatterns() {
+    console.log("Randomizing music patterns...");
+
+    // Randomize Bass Pattern
+    const numBassNotes = 4; // Based on bassNotes array length
+    this.bassPattern = [];
+    for (let i = 0; i < 16; i++) {
+      // Keep the first beat of each measure as the root note for stability
+      if (i === 0 || i === 8) {
+        this.bassPattern.push(0);
+      }
+      // 20% chance to hold the previous note
+      else if (i > 0 && Math.random() < 0.2) {
+        this.bassPattern.push(this.bassPattern[i - 1]);
+      }
+      // Otherwise, pick a new random note
+      else {
+        this.bassPattern.push(Math.floor(Math.random() * numBassNotes));
+      }
+    }
+
+    // Randomize Melody Pattern
+    const numMelodyNotes = 5; // Based on melodyNotes array length
+    this.melodyPattern = [];
+    for (let i = 0; i < 16; i++) {
+      // Only play notes on quarter beats (even indices)
+      if (i % 2 !== 0) {
+        this.melodyPattern.push(-1); // Rest on off-beats
+      }
+      // 40% chance of a rest on the on-beat
+      else if (Math.random() < 0.4) {
+        this.melodyPattern.push(-1);
+      }
+      // Otherwise, play a note
+      else {
+        this.melodyPattern.push(Math.floor(Math.random() * numMelodyNotes));
+      }
+    }
+  }
+
+  // Create a synthesized tone
+  createTone(frequency, duration, type = "sawtooth", volume = 0.5) {
+    if (!this.audioContext) return;
+
+    const oscillator = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(
+      frequency,
+      this.audioContext.currentTime,
+    );
+
+    // ADSR envelope for more interesting sounds
+    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(
+      volume,
+      this.audioContext.currentTime + 0.01,
+    );
+    gainNode.gain.exponentialRampToValueAtTime(
+      volume * 0.7,
+      this.audioContext.currentTime + duration * 0.3,
+    );
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      this.audioContext.currentTime + duration,
+    );
+
+    oscillator.connect(gainNode);
+    gainNode.connect(this.masterGain);
+
+    oscillator.start(this.audioContext.currentTime);
+    oscillator.stop(this.audioContext.currentTime + duration);
+  }
+
+  // Create drum sounds
+  createDrum(type, volume = 0.8) {
+    if (!this.audioContext) return;
+
+    let frequency, duration, filterFreq;
+
+    switch (type) {
+      case "kick":
+        frequency = 60;
+        duration = 0.2;
+        filterFreq = 100;
+        break;
+      case "snare":
+        frequency = 200;
+        duration = 0.1;
+        filterFreq = 1000;
+        break;
+      case "hihat":
+        frequency = 8000;
+        duration = 0.05;
+        filterFreq = 12000;
+        break;
+    }
+
+    // Create noise for drums
+    const bufferSize = this.audioContext.sampleRate * duration;
+    const buffer = this.audioContext.createBuffer(
+      1,
+      bufferSize,
+      this.audioContext.sampleRate,
+    );
+    const output = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = this.audioContext.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.audioContext.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = filterFreq;
+
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      this.audioContext.currentTime + duration,
+    );
+
+    noise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(this.masterGain);
+
+    noise.start();
+    noise.stop(this.audioContext.currentTime + duration);
+  }
+
+  // *** NEW *** Driving metal/MMX bass line (8th note pattern)
+  playBassLine(beat) {
+    const bassNotes = [
+      82.41, // E2
+      87.31, // F2
+      98.0, // G2
+      110.0, // A2
+    ];
+
+    // 16-beat (2-measure) 8th-note riff
+    // *** MODIFIED *** Uses the class property pattern
+    const note = bassNotes[this.bassPattern[beat % 16]];
+
+    // Punchy square wave bass
+    this.createTone(note, this.beatDuration * 0.9, "square", 0.5);
+  }
+
+  // *** NEW *** High-energy MMX/Doom melody
+  playMelody(beat) {
+    const melodyNotes = [
+      261.63, // C4
+      329.63, // E4
+      392.0, // G4
+      440.0, // A4
+      523.25, // C5
+    ];
+
+    // 16-beat (2-measure) riff, plays on the quarter notes
+    // *** MODIFIED *** Uses the class property pattern
+    const noteIndex = this.melodyPattern[beat % 16];
+
+    if (noteIndex === -1) return; // Rest beat
+
+    const frequency = melodyNotes[noteIndex];
+
+    // Sawtooth for a "fake guitar" lead sound, holds for a full quarter note
+    this.createTone(frequency, this.beatDuration * 1.8, "sawtooth", 0.3);
+  }
+
+  // *** NEW *** Driving Rock/Metal drum pattern (8th note)
+  playDrums(beat) {
+    const beatInPattern = beat % 16; // 16-beat (2-measure) loop
+
+    // Hi-hats: Constant 8th notes for driving feel
+    this.createDrum("hihat", 0.4);
+
+    // Snare on beats 2 and 4 (8th-note indices 2, 6, 10, 14)
+    if (
+      beatInPattern === 2 ||
+      beatInPattern === 6 ||
+      beatInPattern === 10 ||
+      beatInPattern === 14
+    ) {
+      this.createDrum("snare", 0.8);
+    }
+
+    // Kick on beats 1 and 3 (indices 0, 4, 8, 12)
+    if (
+      beatInPattern === 0 ||
+      beatInPattern === 4 ||
+      beatInPattern === 8 ||
+      beatInPattern === 12
+    ) {
+      this.createDrum("kick", 1.0);
+    }
+
+    // Syncopated kick on the 'and' of 4 (indices 7, 15) for a metal feel
+    if (beatInPattern === 7 || beatInPattern === 15) {
+      this.createDrum("kick", 0.7);
+    }
+  }
+
+  // Main music loop
+  playMusicLoop() {
+    if (!this.audioContext || !this.isPlaying) return;
+
+    // Adjust music intensity based on game state
+    const gameState = this.getCurrentGameState();
+    this.adaptMusicToGameState(gameState);
+
+    this.playBassLine(this.currentBeat);
+    this.playMelody(this.currentBeat);
+    this.playDrums(this.currentBeat);
+
+    this.currentBeat++;
+
+    // Schedule next beat
+    setTimeout(() => this.playMusicLoop(), this.beatDuration * 1000);
+  }
+
+  getCurrentGameState() {
+    if (typeof currentState !== "undefined") {
+      if (currentState === "menu") return "menu";
+      if (currentState === "playing") {
+        // Check if game is intense (low health, many monsters, etc.)
+        if (typeof players !== "undefined" && players.length > 0) {
+          const lowHealthPlayers = players.filter((p) => p.health < 30).length;
+          const monstersNearby =
+            typeof monsters !== "undefined" ? monsters.length : 0;
+
+          if (lowHealthPlayers > 0 || monstersNearby > 3) {
+            return "intense";
+          }
+        }
+        return "playing";
+      }
+      if (currentState === "gameOver") return "gameOver";
+    }
+    return "menu";
+  }
+
+  adaptMusicToGameState(state) {
+    switch (state) {
+      case "menu":
+        this.bpm = 120;
+        this.masterGain.gain.value = 0.2;
+        break;
+      case "playing":
+        this.bpm = 140; // Faster
+        this.masterGain.gain.value = 0.3;
+        break;
+      case "intense":
+        this.bpm = 160; // Much faster
+        this.masterGain.gain.value = 0.4;
+        break;
+      case "gameOver":
+        this.bpm = 90; // Slower
+        this.masterGain.gain.value = 0.25;
+        break;
+    }
+    this.beatDuration = 30 / this.bpm; // *** CHANGED *** Now 8th notes (30 / bpm)
+  }
+
+  startMusic() {
+    if (!this.audioContext || this.isPlaying) return;
+
+    // Resume audio context if suspended (browser policy)
+    if (this.audioContext.state === "suspended") {
+      this.audioContext.resume();
+    }
+
+    this.isPlaying = true;
+    this.currentBeat = 0;
+    this.playMusicLoop();
+  }
+
+  stopMusic() {
+    this.isPlaying = false;
+  }
+
+  setVolume(volume) {
+    if (this.masterGain) {
+      this.masterGain.gain.value = Math.max(0, Math.min(1, volume));
+    }
+  }
+
+  // Sound effects
+  playShootSound() {
+    if (!this.audioContext) return;
+    // Quick laser-like sound
+    this.createTone(800, 0.1, "square", 0.3);
+    setTimeout(() => this.createTone(400, 0.05, "square", 0.2), 50);
+  }
+
+  playHitSound() {
+    if (!this.audioContext) return;
+    // Damage sound - harsh and brief
+    this.createTone(150, 0.2, "sawtooth", 0.5);
+  }
+
+  playPickupSound() {
+    if (!this.audioContext) return;
+    // Ascending tones for pickup
+    this.createTone(440, 0.1, "sine", 0.4);
+    setTimeout(() => this.createTone(660, 0.1, "sine", 0.3), 100);
+  }
+
+  playDeathSound() {
+    if (!this.audioContext) return;
+    // Descending dramatic sound
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        this.createTone(220 - i * 30, 0.15, "sawtooth", 0.4 - i * 0.05);
+      }, i * 100);
+    }
+  }
+}
+
+// Global music system instance
+const musicSystem = new MusicSystem();
+
 // Create cover image as base64 PNG
 const coverImageData = "";
 // Sprite types available for selection
@@ -878,10 +1238,14 @@ class Buff {
         `+${HEALTH_BUFF_AMOUNT} HP`,
         "#00ff00",
       );
+      // Play pickup sound
+      musicSystem.playPickupSound();
     } else if (this.type === BUFF_TYPES.DAMAGE) {
       player.damageMultiplier = DAMAGE_BUFF_MULTIPLIER;
       player.damageBuffTimer = 30 * 60; // 30 seconds
       createFloatingText(player.x * 50, player.y * 50, "DAMAGE x2!", "#ffaa00");
+      // Play pickup sound
+      musicSystem.playPickupSound();
     }
   }
 }
@@ -892,6 +1256,19 @@ const keys = {};
 function create() {
   scene = this;
   graphics = this.add.graphics();
+
+  // Initialize audio system
+  musicSystem.initialize().then(() => {
+    // Start music after user interaction (browser requirement)
+    scene.input.once("pointerdown", () => {
+      musicSystem.startMusic();
+    });
+
+    // Also start on keyboard input
+    scene.input.keyboard.once("keydown", () => {
+      musicSystem.startMusic();
+    });
+  });
 
   // Generate initial maze
   generateMaze();
@@ -1182,6 +1559,11 @@ function updatePlayerRespawns() {
   }
 }
 
+// Helper function to flip sprite data horizontally
+function flipSpriteHorizontally(spriteData) {
+  return spriteData.map((row) => [...row].reverse());
+}
+
 function drawMenu() {
   graphics.fillStyle(0x222222);
   graphics.fillRect(0, 0, 800, 600);
@@ -1193,10 +1575,29 @@ function drawMenu() {
     }
   });
 
-  // Title
+  // Draw banana demons on both sides of the title
+  const demonSize = 80;
+  const titleY = 110; // Aligned with title
+
+  // Left banana demon
+  drawSprite(BANANA_DEMON, DEMON_COLORS, 100, titleY, demonSize, demonSize);
+
+  // Right banana demon (flipped horizontally for symmetry)
+  const flippedDemon = flipSpriteHorizontally(BANANA_DEMON);
+  const rightDemonX = 800 - 100 - demonSize;
+  drawSprite(
+    flippedDemon,
+    DEMON_COLORS,
+    rightDemonX,
+    titleY,
+    demonSize,
+    demonSize,
+  );
+
+  // Title (centered between demons)
   scene.add
     .text(400, 150, "BANANA MAYHEM", {
-      fontSize: "64px",
+      fontSize: "56px",
       color: "#ff0000",
       fontFamily: "monospace",
     })
@@ -1461,6 +1862,8 @@ function updateMonsters() {
             nearestPlayer.hitFlashTimer = 20;
             nearestPlayer.damageScreenTimer = 15;
             monster.attackCooldown = MONSTER_ATTACK_COOLDOWN;
+            // Play damage sound
+            musicSystem.playHitSound();
 
             if (nearestPlayer.health <= 0) {
               // Deduct points for death by monster
@@ -1476,6 +1879,8 @@ function updateMonsters() {
               nearestPlayer.health = 0;
               nearestPlayer.isDead = true;
               nearestPlayer.respawnTimer = RESPAWN_DELAY;
+              // Play death sound
+              musicSystem.playDeathSound();
             }
           } else {
             monster.attackCooldown--;
@@ -1673,6 +2078,8 @@ function updateBullets() {
         // Hit monster!
         monster.health -= b.damage; // Use bullet's damage (includes multiplier)
         monster.hitFlashTimer = 15; // Flash for 15 frames
+        // Play hit sound
+        musicSystem.playHitSound();
 
         if (monster.health <= 0) {
           // Award points to shooter for killing monster
@@ -1701,6 +2108,8 @@ function updateBullets() {
         // Add visual damage effects
         p.hitFlashTimer = 20; // Flash for 20 frames
         p.damageScreenTimer = 15; // Screen effect for 15 frames
+        // Play hit sound
+        musicSystem.playHitSound();
 
         if (p.health <= 0) {
           // Award points to shooter and deduct from victim
@@ -1728,6 +2137,8 @@ function updateBullets() {
           p.health = 0;
           p.isDead = true;
           p.respawnTimer = RESPAWN_DELAY;
+          // Play death sound
+          musicSystem.playDeathSound();
         }
       }
     }
@@ -1833,6 +2244,8 @@ function handleInput() {
       p.shootCooldown = p.shootDelay;
       // Trigger fire animation
       p.weaponFireTimer = 10; // 10 frames of animation
+      // Play shoot sound
+      musicSystem.playShootSound();
     }
 
     // Update movement state and animation
