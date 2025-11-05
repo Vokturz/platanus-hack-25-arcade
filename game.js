@@ -1041,8 +1041,8 @@ const MONSTER_CHASE_SPEED = 0.02;
 
 // Points system constants
 const POINTS_MONSTER_KILL = 5;
-const POINTS_PLAYER_KILL = 20;
-const POINTS_DEATH_PENALTY = -10;
+const POINTS_PLAYER_KILL = 50;
+const POINTS_DEATH_PENALTY = -50;
 
 // Game timer constants
 const GAME_DURATION = 120 * 60; // 2 minutes at 60fps (120 seconds * 60 fps)
@@ -1141,6 +1141,9 @@ class Player {
     // *** NEW *** Damage buff system
     this.damageMultiplier = 1;
     this.damageBuffTimer = 0;
+    this.lowHealthWarned = false;
+    this.killStreak = 0;
+    this.lastKillTime = 0;
   }
 }
 
@@ -1163,19 +1166,84 @@ class Bullet {
 // Floating text class for point notifications
 // *** NEW *** Floating text class for point notifications
 class FloatingText {
-  constructor(x, y, text, color = "#ffff00") {
+  constructor(x, y, text, color = "#ffff00", anchor = null, playerId = null) {
     this.x = x;
     this.y = y;
     this.text = text;
     this.color = color;
     this.lifetime = 120; // 2 seconds at 60fps
     this.velocityY = -0.5; // Float upward
+    this.anchor = anchor; // 'score', 'health', 'weapon', or null for world position
+    this.playerId = playerId; // Which player this belongs to
+    this.offsetX = 0;
+    this.offsetY = 0;
   }
 
   update() {
-    this.y += this.velocityY;
     this.lifetime--;
+    this.offsetY += this.velocityY;
+
+    // Add slight horizontal wobble for anchored notifications
+    if (this.anchor) {
+      this.offsetX = Math.sin(this.lifetime * 0.1) * 2;
+    }
+
     return this.lifetime > 0;
+  }
+
+  // Get the actual screen position based on anchor
+  getScreenPosition() {
+    if (!this.anchor || this.playerId === null) {
+      return { x: this.x + this.offsetX, y: this.y + this.offsetY };
+    }
+
+    const player = players[this.playerId];
+    if (!player) return { x: this.x + this.offsetX, y: this.y + this.offsetY };
+
+    let baseX, baseY;
+
+    if (numPlayers === 1) {
+      // Single player layout
+      switch (this.anchor) {
+        case "score":
+          baseX = 20;
+          baseY = 550 - this.playerId * 40;
+          break;
+        case "health":
+          baseX = 800 - 80;
+          baseY = 600 - 50;
+          break;
+        case "weapon":
+          baseX = 400;
+          baseY = 500;
+          break;
+        default:
+          baseX = this.x;
+          baseY = this.y;
+      }
+    } else {
+      // Split screen layout
+      const isPlayer1 = this.playerId === 0;
+      switch (this.anchor) {
+        case "score":
+          baseX = isPlayer1 ? 20 : 422;
+          baseY = 550;
+          break;
+        case "health":
+          baseX = isPlayer1 ? 398 - 80 : 800 - 80;
+          baseY = 600 - 50;
+          break;
+        case "weapon":
+          baseX = isPlayer1 ? 199 : 601;
+          baseY = 500;
+          break;
+        default:
+          baseX = this.x;
+          baseY = this.y;
+      }
+    }
+
+    return { x: baseX + this.offsetX, y: baseY + this.offsetY };
   }
 }
 
@@ -1232,9 +1300,8 @@ class Buff {
         player.maxHealth * 5,
         player.health + HEALTH_BUFF_AMOUNT,
       );
-      createFloatingText(
-        player.x * 50,
-        player.y * 50,
+      createHealthNotification(
+        player.playerId,
         `+${HEALTH_BUFF_AMOUNT} HP`,
         "#00ff00",
       );
@@ -1243,7 +1310,7 @@ class Buff {
     } else if (this.type === BUFF_TYPES.DAMAGE) {
       player.damageMultiplier = DAMAGE_BUFF_MULTIPLIER;
       player.damageBuffTimer = 30 * 60; // 30 seconds
-      createFloatingText(player.x * 50, player.y * 50, "DAMAGE x2!", "#ffaa00");
+      createWeaponNotification(player.playerId, "DAMAGE x2!", "#ffaa00");
       // Play pickup sound
       musicSystem.playPickupSound();
     }
@@ -1327,6 +1394,8 @@ function startNewGame() {
     // *** NEW *** Reset damage multiplier
     player.damageMultiplier = 1;
     player.damageBuffTimer = 0;
+    player.killStreak = 0;
+    player.lastKillTime = 0;
   }
 
   // *** NEW *** Clear floating texts
@@ -1533,8 +1602,53 @@ function endGame() {
 }
 
 // Create floating text notification
-function createFloatingText(x, y, text, color) {
-  floatingTexts.push(new FloatingText(x, y, text, color));
+function createFloatingText(x, y, text, color, anchor = null, playerId = null) {
+  floatingTexts.push(new FloatingText(x, y, text, color, anchor, playerId));
+}
+
+// Enhanced functions for specific UI-anchored notifications
+function createScoreNotification(playerId, text, color = "#ffff00") {
+  createFloatingText(0, 0, text, color, "score", playerId);
+}
+
+function createHealthNotification(playerId, text, color = "#00ff00") {
+  createFloatingText(0, 0, text, color, "health", playerId);
+}
+
+function createWeaponNotification(playerId, text, color = "#ffaa00") {
+  createFloatingText(0, 0, text, color, "weapon", playerId);
+}
+
+// Helper function to handle kill streak bonuses
+function handleKillStreak(shooter, basePoints, baseNotificationColor) {
+  shooter.score += basePoints;
+  shooter.killStreak++;
+  shooter.lastKillTime = Date.now();
+
+  // Check for kill streak bonuses
+  let streakBonus = 0;
+  let streakMessage = "";
+  if (shooter.killStreak === 3) {
+    streakBonus = 10;
+    streakMessage = "KILL STREAK! +10";
+  } else if (shooter.killStreak === 5) {
+    streakBonus = 25;
+    streakMessage = "MONSTER SLAYER! +25";
+  } else if (shooter.killStreak === 10) {
+    streakBonus = 50;
+    streakMessage = "LEGENDARY! +50";
+  }
+
+  if (streakBonus > 0) {
+    shooter.score += streakBonus;
+    createScoreNotification(shooter.playerId, streakMessage, "#ff9900");
+  } else {
+    createScoreNotification(
+      shooter.playerId,
+      `+${basePoints}`,
+      baseNotificationColor,
+    );
+  }
 }
 
 // Update floating texts
@@ -1766,8 +1880,39 @@ function updatePlayerEffects() {
     // *** NEW *** Update damage buff timer
     if (player.damageBuffTimer > 0) {
       player.damageBuffTimer--;
+
+      // Warning when buff is about to expire (5 seconds = 300 frames)
+      if (player.damageBuffTimer === 300) {
+        createWeaponNotification(
+          player.playerId,
+          "BUFF ENDING SOON!",
+          "#ffaa00",
+        );
+      }
+
       if (player.damageBuffTimer === 0) {
         player.damageMultiplier = 1; // Reset to normal damage
+        createWeaponNotification(player.playerId, "BUFF EXPIRED", "#ff6666");
+      }
+    }
+
+    // Low health warning
+    if (player.health <= 25 && player.health > 0 && !player.isDead) {
+      if (!player.lowHealthWarned || player.health === 25) {
+        createHealthNotification(player.playerId, "LOW HEALTH!", "#ff3333");
+        player.lowHealthWarned = true;
+      }
+    } else if (player.health > 25) {
+      player.lowHealthWarned = false;
+    }
+
+    // Reset kill streak after 6 seconds of inactivity (600 frames at 60fps)
+    if (player.killStreak > 0 && player.lastKillTime > 0) {
+      const framesSinceLastKill = Date.now() - player.lastKillTime;
+      if (framesSinceLastKill > 6000) {
+        // 6 seconds in milliseconds
+        player.killStreak = 0;
+        player.lastKillTime = 0;
       }
     }
   }
@@ -1868,12 +2013,15 @@ function updateMonsters() {
             if (nearestPlayer.health <= 0) {
               // Deduct points for death by monster
               nearestPlayer.score += POINTS_DEATH_PENALTY;
-              createFloatingText(
-                nearestPlayer.x * 50,
-                nearestPlayer.y * 50,
+              createScoreNotification(
+                nearestPlayer.playerId,
                 `${POINTS_DEATH_PENALTY}`,
                 "#ff0000",
               );
+
+              // Reset kill streak when killed by monster
+              nearestPlayer.killStreak = 0;
+              nearestPlayer.lastKillTime = 0;
 
               // Reset health and start respawn timer
               nearestPlayer.health = 0;
@@ -2087,13 +2235,7 @@ function updateBullets() {
             (player) => player.playerId === b.ownerId,
           );
           if (shooter) {
-            shooter.score += POINTS_MONSTER_KILL;
-            createFloatingText(
-              shooter.x * 50,
-              shooter.y * 50,
-              `+${POINTS_MONSTER_KILL}`,
-              "#ffff00",
-            );
+            handleKillStreak(shooter, POINTS_MONSTER_KILL, "#ffff00");
           }
 
           // Add to dead monsters for respawning
@@ -2117,21 +2259,18 @@ function updateBullets() {
             (player) => player.playerId === b.ownerId,
           );
           if (shooter) {
-            shooter.score += POINTS_PLAYER_KILL;
-            createFloatingText(
-              shooter.x * 50,
-              shooter.y * 50,
-              `+${POINTS_PLAYER_KILL}`,
-              "#00ff00",
-            );
+            handleKillStreak(shooter, POINTS_PLAYER_KILL, "#00ff00");
           }
           p.score += POINTS_DEATH_PENALTY;
-          createFloatingText(
-            p.x * 50,
-            p.y * 50,
+          createScoreNotification(
+            p.playerId,
             `${POINTS_DEATH_PENALTY}`,
             "#ff0000",
           );
+
+          // Reset kill streak when killed by player
+          p.killStreak = 0;
+          p.lastKillTime = 0;
 
           // Reset health and start respawn timer
           p.health = 0;
@@ -2361,14 +2500,25 @@ function drawGame() {
   // Draw floating point texts
   for (const floatingText of floatingTexts) {
     const alpha = floatingText.lifetime / 120; // Fade out over time
+    const pos = floatingText.getScreenPosition();
+
+    // Add background for better visibility
+    if (floatingText.anchor) {
+      graphics.fillStyle(0x000000, 0.7 * alpha);
+      graphics.fillRect(pos.x - 40, pos.y - 10, 80, 20);
+    }
+
     scene.add
-      .text(floatingText.x, floatingText.y, floatingText.text, {
-        fontSize: "16px",
+      .text(pos.x, pos.y, floatingText.text, {
+        fontSize: floatingText.anchor ? "20px" : "16px",
         color: floatingText.color,
         fontFamily: "monospace",
+        stroke: "#000000",
+        strokeThickness: 2,
       })
       .setOrigin(0.5)
-      .setAlpha(alpha);
+      .setAlpha(alpha)
+      .setDepth(10);
   }
 }
 
